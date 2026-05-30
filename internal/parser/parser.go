@@ -13,10 +13,11 @@ import (
 	"github.com/lehmichael/cmc-lsp-go/internal/source"
 )
 
-func Parse(tokens []l.Token) (Ast, []diag.Diagnostic) {
+func Parse(tokens []l.Token, diagnostics []diag.Diagnostic) (Ast, []diag.Diagnostic) {
 	p := parser{
-		Tokens: tokens,
-		Pos:    0,
+		Tokens:      tokens,
+		Pos:         0,
+		Diagnostics: diagnostics,
 	}
 
 	var statements Ast
@@ -88,6 +89,7 @@ func (p *parser) parseStatement(leadingComments []string) Statement {
 		return Statement{
 			Kind:            NewLine{},
 			LeadingComments: leadingComments,
+			Range:           token.Range,
 		}
 	}
 
@@ -121,7 +123,7 @@ func (p *parser) parseFunctionStatement(leadingComments []string) Statement {
 		identifier = &i
 	} else {
 		invalidIdentTokens = p.recoverFromError(
-			diag.DiagFunctionInvalidIdentifier,
+			diag.FunctionInvalidIdentifier,
 			p.Pos,
 			[]l.TokenKind{l.SymbolLeftParen, l.NewLine, l.SymbolLeftBrace, l.Comment, l.EOF},
 		)
@@ -163,7 +165,7 @@ func (p *parser) parseFunctionStatement(leadingComments []string) Statement {
 	var invalidParamTokens []l.Token
 	if invalidParams {
 		invalidParamTokens = p.recoverFromError(
-			diag.DiagFunctionInvalidParameterDef,
+			diag.FunctionInvalidParameterDef,
 			paramTokenPos,
 			[]l.TokenKind{l.SymbolLeftBrace, l.NewLine, l.Comment, l.EOF},
 		)
@@ -172,7 +174,7 @@ func (p *parser) parseFunctionStatement(leadingComments []string) Statement {
 	var invalidOpeningBraceTokens []l.Token
 	if t := p.expectAndAdvance([]l.TokenKind{l.SymbolLeftBrace}); t == nil {
 		invalidOpeningBraceTokens = p.recoverFromError(
-			diag.DiagFunctionInvalidOpeningBrace,
+			diag.FunctionInvalidOpeningBrace,
 			paramTokenPos,
 			[]l.TokenKind{l.Comment, l.NewLine, l.EOF},
 		)
@@ -183,7 +185,7 @@ func (p *parser) parseFunctionStatement(leadingComments []string) Statement {
 	var invalidAfterOpeningBraceTokens []l.Token
 	if t := p.expectAndAdvance([]l.TokenKind{l.NewLine}); t == nil {
 		invalidAfterOpeningBraceTokens = p.recoverFromError(
-			diag.DiagUnexpectedToken,
+			diag.UnexpectedToken,
 			p.Pos,
 			[]l.TokenKind{l.NewLine, l.EOF},
 		)
@@ -200,7 +202,7 @@ func (p *parser) parseFunctionStatement(leadingComments []string) Statement {
 		_ = p.advance()
 		body, comments = p.parseBody(
 			[]l.TokenKind{l.SymbolRightBrace},
-			diag.DiagFunctionBodyClosingBraceMissing,
+			diag.FunctionBodyClosingBraceMissing,
 		)
 
 		invalidAfterClosingBraceTokens, trailingCommentEnd = p.parseEndComment()
@@ -247,7 +249,7 @@ func (p *parser) parsePreprocessor(leadingComments []string) Statement {
 			path = t.Lexeme
 			_ = p.advance()
 		} else {
-			tokens := p.recoverFromError(diag.DiagUnexpectedToken, p.Pos, []l.TokenKind{})
+			tokens := p.recoverFromError(diag.UnexpectedToken, p.Pos, []l.TokenKind{})
 			invalidToken = &tokens[0]
 			endToken = tokens[0]
 		}
@@ -299,7 +301,7 @@ func (p *parser) parseEndComment() ([]l.Token, *string) {
 	var invalidAfter []l.Token
 	if t := p.expect([]l.TokenKind{l.NewLine, l.EOF, l.Comment}); t == nil {
 		invalidAfter = p.recoverFromError(
-			diag.DiagUnexpectedToken,
+			diag.UnexpectedToken,
 			p.Pos,
 			[]l.TokenKind{l.NewLine, l.EOF, l.Comment},
 		)
@@ -324,7 +326,6 @@ func (p *parser) parseAssignment(
 	identifier IdentifierExpression,
 	leadingComments []string,
 ) Statement {
-	startToken := identifier.Token
 	op := tokenToAssignmentKind(p.currentToken())
 	if op == nil {
 		panic("must be called with assignment token")
@@ -341,7 +342,7 @@ func (p *parser) parseAssignment(
 			Target: identifier,
 			Value:  value,
 		},
-		Range:           source.MergeRange(startToken.Range, value.Range),
+		Range:           source.MergeRange(identifier.Range, value.Range),
 		LeadingComments: leadingComments,
 		TrailingComment: trailingComment,
 		InvalidAfter:    invalidAfter,
@@ -352,8 +353,8 @@ func (p *parser) parseDeleteStatement(
 	identifier IdentifierExpression,
 	leadingComments []string,
 ) Statement {
-	startToken := identifier.Token
 	endToken := p.currentToken()
+
 	if endToken.Kind != l.OperatorDelete {
 		panic("must be called with SymbolLeftParen token")
 	}
@@ -362,7 +363,7 @@ func (p *parser) parseDeleteStatement(
 	var invalidAfter []l.Token
 	if t := p.expect([]l.TokenKind{l.NewLine, l.EOF, l.Comment}); t == nil {
 		invalidAfter = p.recoverFromError(
-			diag.DiagUnexpectedToken,
+			diag.UnexpectedToken,
 			p.Pos,
 			[]l.TokenKind{l.NewLine, l.EOF, l.Comment},
 		)
@@ -370,7 +371,7 @@ func (p *parser) parseDeleteStatement(
 	trailingComment := p.parseOptionalComment()
 	if t := p.expectAndAdvance([]l.TokenKind{l.NewLine, l.EOF}); t == nil {
 		invalidAfter = p.recoverFromError(
-			diag.DiagUnexpectedToken,
+			diag.UnexpectedToken,
 			p.Pos,
 			[]l.TokenKind{l.NewLine, l.EOF},
 		)
@@ -381,8 +382,7 @@ func (p *parser) parseDeleteStatement(
 		Kind: DeleteStatement{
 			Identifier: identifier,
 		},
-		// Range:           source.FromTokenRange(startToken, endToken),
-		Range:           source.MergeRange(startToken.Range, endToken.Range),
+		Range:           source.MergeRange(identifier.Range, endToken.Range),
 		LeadingComments: leadingComments,
 		TrailingComment: trailingComment,
 		InvalidAfter:    invalidAfter,
@@ -419,7 +419,7 @@ func (p *parser) parseCallStatement(
 	if t := p.expectAndAdvance([]l.TokenKind{l.SymbolRightParen}); t == nil {
 		missingClosingParen = true
 		invalidArgs = p.recoverFromError(
-			diag.DiagUnexpectedToken,
+			diag.UnexpectedToken,
 			p.Pos,
 			[]l.TokenKind{l.SymbolRightParen, l.NewLine, l.EOF},
 		)
@@ -432,7 +432,7 @@ func (p *parser) parseCallStatement(
 	var invalidAfterArgs []l.Token
 	if t := p.expect([]l.TokenKind{l.NewLine, l.EOF, l.Comment}); t == nil {
 		invalidAfterArgs = p.recoverFromError(
-			diag.DiagUnexpectedToken,
+			diag.UnexpectedToken,
 			p.Pos,
 			[]l.TokenKind{l.NewLine, l.EOF, l.Comment},
 		)
@@ -440,7 +440,7 @@ func (p *parser) parseCallStatement(
 	trailingComment := p.parseOptionalComment()
 	if t := p.expectAndAdvance([]l.TokenKind{l.NewLine, l.EOF}); t == nil {
 		invalidAfterArgs = p.recoverFromError(
-			diag.DiagUnexpectedToken,
+			diag.UnexpectedToken,
 			p.Pos,
 			[]l.TokenKind{l.NewLine, l.EOF},
 		)
@@ -458,11 +458,8 @@ func (p *parser) parseCallStatement(
 				InvalidAfterArgs:    invalidAfterArgs,
 				MissingClosingParen: missingClosingParen,
 			},
-			Token: startToken,
-			// Range: source.FromTokenRange(startToken, endToken),
 			Range: source.MergeRange(startToken.Range, endToken.Range),
 		},
-		// Range: source.FromTokenRange(startToken, endToken),
 		Range: source.MergeRange(startToken.Range, endToken.Range),
 	}
 }
@@ -510,7 +507,7 @@ func (p *parser) parseSection(leadingComments []string) Statement {
 			section = s
 		} else {
 			i := p.recoverFromError(
-				diag.DiagSectionInvalidDrive,
+				diag.SectionInvalidDrive,
 				startPos,
 				[]l.TokenKind{l.NewLine, l.EOF, l.Comment},
 			)
@@ -521,7 +518,7 @@ func (p *parser) parseSection(leadingComments []string) Statement {
 			section = s
 		} else {
 			i := p.recoverFromError(
-				diag.DiagSectionInvalidChan, startPos,
+				diag.SectionInvalidChan, startPos,
 				[]l.TokenKind{l.NewLine, l.EOF, l.Comment},
 			)
 			section = InvalidSection(i)
@@ -531,14 +528,14 @@ func (p *parser) parseSection(leadingComments []string) Statement {
 			section = s
 		} else {
 			i := p.recoverFromError(
-				diag.DiagSectionInvalidChan, startPos,
+				diag.SectionInvalidChan, startPos,
 				[]l.TokenKind{l.NewLine, l.EOF, l.Comment},
 			)
 			section = InvalidSection(i)
 		}
 	default:
 		i := p.recoverFromError(
-			diag.DiagSectionFormatUnrecogniced, startPos,
+			diag.SectionFormatUnrecogniced, startPos,
 			[]l.TokenKind{l.NewLine, l.EOF, l.Comment},
 		)
 		section = InvalidSection(i)
@@ -547,7 +544,7 @@ func (p *parser) parseSection(leadingComments []string) Statement {
 	var invalidEndTokens []l.Token
 	if t := p.expect([]l.TokenKind{l.NewLine, l.EOF, l.Comment}); t == nil {
 		invalidEndTokens = p.recoverFromError(
-			diag.DiagUnexpectedToken,
+			diag.UnexpectedToken,
 			p.Pos,
 			[]l.TokenKind{l.NewLine, l.EOF, l.Comment},
 		)
@@ -557,7 +554,7 @@ func (p *parser) parseSection(leadingComments []string) Statement {
 
 	if t := p.expectAndAdvance([]l.TokenKind{l.NewLine, l.EOF}); t == nil {
 		invalidEndTokens = p.recoverFromError(
-			diag.DiagUnexpectedToken,
+			diag.UnexpectedToken,
 			p.Pos,
 			[]l.TokenKind{l.NewLine, l.EOF},
 		)
@@ -644,7 +641,7 @@ func (p *parser) parseWhileBlock(leadingComments []string) Statement {
 	var invalidAfterExpr []l.Token
 	if t := p.expect([]l.TokenKind{l.NewLine, l.EOF, l.Comment}); t == nil {
 		invalidAfterExpr = p.recoverFromError(
-			diag.DiagUnexpectedToken,
+			diag.UnexpectedToken,
 			p.Pos,
 			[]l.TokenKind{l.NewLine, l.EOF, l.Comment},
 		)
@@ -654,7 +651,7 @@ func (p *parser) parseWhileBlock(leadingComments []string) Statement {
 
 	if t := p.expectAndAdvance([]l.TokenKind{l.NewLine, l.EOF}); t == nil {
 		invalidAfterExpr = p.recoverFromError(
-			diag.DiagUnexpectedToken,
+			diag.UnexpectedToken,
 			p.Pos,
 			[]l.TokenKind{l.NewLine, l.EOF},
 		)
@@ -665,14 +662,14 @@ func (p *parser) parseWhileBlock(leadingComments []string) Statement {
 	var trailingCommentEnd *string
 	var invalidAfterEnd []l.Token
 
-	body, comments := p.parseBody([]l.TokenKind{l.KeywordEndWhile}, diag.DiagWhileEndMissing)
+	body, comments := p.parseBody([]l.TokenKind{l.KeywordEndWhile}, diag.WhileEndMissing)
 
 	if body != nil {
 		endToken = p.advance()
 
 		if t := p.expect([]l.TokenKind{l.NewLine, l.EOF, l.Comment}); t == nil {
 			invalidAfterExpr = p.recoverFromError(
-				diag.DiagUnexpectedToken,
+				diag.UnexpectedToken,
 				p.Pos,
 				[]l.TokenKind{l.NewLine, l.EOF, l.Comment},
 			)
@@ -682,7 +679,7 @@ func (p *parser) parseWhileBlock(leadingComments []string) Statement {
 
 		if t := p.expectAndAdvance([]l.TokenKind{l.NewLine, l.EOF}); t == nil {
 			invalidAfterExpr = p.recoverFromError(
-				diag.DiagUnexpectedToken,
+				diag.UnexpectedToken,
 				p.Pos,
 				[]l.TokenKind{l.NewLine, l.EOF},
 			)
@@ -719,7 +716,7 @@ func (p *parser) parseIfBlock(leadingComments []string) Statement {
 	if t := p.expect(
 		[]l.TokenKind{l.NewLine, l.EOF, l.Comment},
 	); t == nil {
-		invalidAfterExpr = p.recoverFromError(diag.DiagUnexpectedToken, p.Pos, []l.TokenKind{
+		invalidAfterExpr = p.recoverFromError(diag.UnexpectedToken, p.Pos, []l.TokenKind{
 			l.NewLine, l.EOF, l.Comment,
 		})
 	}
@@ -728,7 +725,7 @@ func (p *parser) parseIfBlock(leadingComments []string) Statement {
 	if t := p.expectAndAdvance(
 		[]l.TokenKind{l.NewLine, l.EOF},
 	); t == nil {
-		invalidAfterExpr = p.recoverFromError(diag.DiagUnexpectedToken, p.Pos, []l.TokenKind{
+		invalidAfterExpr = p.recoverFromError(diag.UnexpectedToken, p.Pos, []l.TokenKind{
 			l.NewLine, l.EOF,
 		})
 		_ = p.advance()
@@ -742,7 +739,7 @@ func (p *parser) parseIfBlock(leadingComments []string) Statement {
 	var comments []string
 	thenBody, thenComments := p.parseBody([]l.TokenKind{
 		l.KeywordElse, l.KeywordElseIf, l.KeywordEndIf,
-	}, diag.DiagIfThenEndMissing)
+	}, diag.IfThenEndMissing)
 
 	if thenBody != nil {
 		token := p.currentToken()
@@ -760,7 +757,7 @@ func (p *parser) parseIfBlock(leadingComments []string) Statement {
 			var invalidAfterElseIfExpr []l.Token = nil
 			if t := p.expect([]l.TokenKind{l.NewLine, l.EOF, l.Comment}); t == nil {
 				invalidAfterElseIfExpr = p.recoverFromError(
-					diag.DiagUnexpectedToken,
+					diag.UnexpectedToken,
 					p.Pos,
 					[]l.TokenKind{l.NewLine, l.EOF, l.Comment},
 				)
@@ -770,7 +767,7 @@ func (p *parser) parseIfBlock(leadingComments []string) Statement {
 
 			if t := p.expectAndAdvance([]l.TokenKind{l.NewLine, l.EOF}); t == nil {
 				invalidAfterElseIfExpr = p.recoverFromError(
-					diag.DiagUnexpectedToken,
+					diag.UnexpectedToken,
 					p.Pos,
 					[]l.TokenKind{l.NewLine, l.EOF},
 				)
@@ -780,7 +777,7 @@ func (p *parser) parseIfBlock(leadingComments []string) Statement {
 			var elseIfThen []Statement
 			elseIfThen, comments = p.parseBody(
 				[]l.TokenKind{l.KeywordElse, l.KeywordEndIf},
-				diag.DiagIfElseIfEndMissing,
+				diag.IfElseIfEndMissing,
 			)
 
 			elseIfBranchesList = append(elseIfBranchesList, ElseIf{
@@ -802,7 +799,7 @@ func (p *parser) parseIfBlock(leadingComments []string) Statement {
 
 			if t := p.expect([]l.TokenKind{l.NewLine, l.EOF, l.Comment}); t == nil {
 				invalidAfterElse = p.recoverFromError(
-					diag.DiagUnexpectedToken,
+					diag.UnexpectedToken,
 					p.Pos,
 					[]l.TokenKind{l.NewLine, l.EOF, l.Comment},
 				)
@@ -812,7 +809,7 @@ func (p *parser) parseIfBlock(leadingComments []string) Statement {
 
 			if t := p.expectAndAdvance([]l.TokenKind{l.NewLine, l.EOF}); t == nil {
 				invalidAfterElse = p.recoverFromError(
-					diag.DiagUnexpectedToken,
+					diag.UnexpectedToken,
 					p.Pos,
 					[]l.TokenKind{l.NewLine, l.EOF},
 				)
@@ -823,7 +820,7 @@ func (p *parser) parseIfBlock(leadingComments []string) Statement {
 			var elseBody []Statement
 			elseBody, comments = p.parseBody(
 				[]l.TokenKind{l.KeywordEndIf},
-				diag.DiagIfElseEndMissing,
+				diag.IfElseEndMissing,
 			)
 
 			elseBranch = &Else{
@@ -842,7 +839,7 @@ func (p *parser) parseIfBlock(leadingComments []string) Statement {
 
 		if t := p.expect([]l.TokenKind{l.NewLine, l.EOF, l.Comment}); t == nil {
 			invalidAfterEnd = p.recoverFromError(
-				diag.DiagUnexpectedToken,
+				diag.UnexpectedToken,
 				p.Pos,
 				[]l.TokenKind{l.NewLine, l.EOF, l.Comment},
 			)
@@ -852,7 +849,7 @@ func (p *parser) parseIfBlock(leadingComments []string) Statement {
 
 		if t := p.expectAndAdvance([]l.TokenKind{l.NewLine, l.EOF}); t == nil {
 			invalidAfterEnd = p.recoverFromError(
-				diag.DiagUnexpectedToken,
+				diag.UnexpectedToken,
 				p.Pos,
 				[]l.TokenKind{l.NewLine, l.EOF},
 			)
@@ -900,7 +897,7 @@ func (p *parser) parseBody(
 
 			p.Diagnostics = append(p.Diagnostics, diag.Diagnostic{
 				Kind:     diagKind,
-				Severity: diag.SeverityError,
+				Severity: diag.Error,
 			})
 
 			return nil, nil
@@ -943,7 +940,7 @@ func (p *parser) recoverFromError(
 	p.Diagnostics = append(p.Diagnostics, diag.Diagnostic{
 		Kind:     diagKind,
 		Range:    source.MergeRange(p.Tokens[startPos].Range, p.currentToken().Range),
-		Severity: diag.SeverityError,
+		Severity: diag.Error,
 	})
 
 	return p.Tokens[startPos:p.Pos]
@@ -965,9 +962,9 @@ func (p *parser) parseExpression(minPrec uint8) Expression {
 		} else {
 			missingClosingParentheses = true
 			p.Diagnostics = append(p.Diagnostics, diag.Diagnostic{
-				Kind:     diag.DiagExpressionGroupedMissingClosingParentheses,
+				Kind:     diag.ExpressionGroupedMissingClosingParentheses,
 				Range:    source.MergeRange(token.Range, endToken.Range),
-				Severity: diag.SeverityError,
+				Severity: diag.Error,
 			})
 		}
 
@@ -975,7 +972,6 @@ func (p *parser) parseExpression(minPrec uint8) Expression {
 			Expression:          innerExpression,
 			MissingClosingParen: missingClosingParentheses,
 		}
-		expression.Token = token
 		expression.Range = source.MergeRange(token.Range, endToken.Range)
 	case l.OperatorNegate, l.OperatorAdd, l.OperatorSubtract:
 		expression = p.parsePrefixedExpression()
@@ -983,12 +979,10 @@ func (p *parser) parseExpression(minPrec uint8) Expression {
 		innerIdent := p.parseIdentifier()
 
 		expression.Kind = innerIdent
-		expression.Token = token
 		expression.Range = innerIdent.Range
 	case l.LiteralString:
 		_ = p.advance()
 		expression.Kind = StringLiteral(token.Lexeme)
-		expression.Token = token
 		expression.Range = token.Range
 	case l.LiteralNumber:
 		expression = p.parseNumberLiteral()
@@ -998,34 +992,30 @@ func (p *parser) parseExpression(minPrec uint8) Expression {
 		_ = p.advance()
 		expression = Expression{
 			Kind:  NullLiteral{},
-			Token: token,
 			Range: token.Range,
 		}
 	case l.LiteralTrue:
 		_ = p.advance()
 		expression = Expression{
 			Kind:  TrueLiteral{},
-			Token: token,
 			Range: token.Range,
 		}
 	case l.LiteralFalse:
 		_ = p.advance()
 		expression = Expression{
 			Kind:  FalseLiteral{},
-			Token: token,
 			Range: token.Range,
 		}
 	default:
 		_ = p.advance()
 		p.Diagnostics = append(p.Diagnostics, diag.Diagnostic{
-			Kind:     diag.DiagExpressionInvalid,
+			Kind:     diag.ExpressionInvalid,
 			Range:    token.Range,
-			Severity: diag.SeverityError,
+			Severity: diag.Error,
 		})
 
 		expression = Expression{
 			Kind:  Invalid{},
-			Token: token,
 			Range: token.Range,
 		}
 	}
@@ -1055,7 +1045,6 @@ func (p *parser) parseExpression(minPrec uint8) Expression {
 				Left:  expression,
 				Right: rhs,
 			},
-			Token: token,
 			Range: source.SourceRange{
 				Start: expression.Range.Start,
 				End:   rhs.Range.End,
@@ -1137,15 +1126,14 @@ func (p *parser) parseFormatNumber() Expression {
 	lexLen := len([]rune(token.Lexeme))
 	if lexLen < 4 {
 		p.Diagnostics = append(p.Diagnostics, diag.Diagnostic{
-			Kind:     diag.DiagExpressionInvalid,
+			Kind:     diag.ExpressionInvalid,
 			Range:    token.Range,
-			Severity: diag.SeverityError,
+			Severity: diag.Error,
 		})
 
 		return Expression{
 			Kind:  Invalid{},
 			Range: token.Range,
-			Token: token,
 		}
 	}
 
@@ -1160,15 +1148,14 @@ func (p *parser) parseFormatNumber() Expression {
 					Kind:  Hex,
 					Value: num,
 				},
-				Token: token,
 				Range: token.Range,
 			}
 		}
 
 		p.Diagnostics = append(p.Diagnostics, diag.Diagnostic{
-			Kind:     diag.DiagBitwiseLiteralInvalidHex,
+			Kind:     diag.BitwiseLiteralInvalidHex,
 			Range:    token.Range,
-			Severity: diag.SeverityError,
+			Severity: diag.Error,
 		})
 	case 'b':
 		if num, err := strconv.ParseUint(numString, 10, 64); err == nil {
@@ -1177,28 +1164,26 @@ func (p *parser) parseFormatNumber() Expression {
 					Kind:  Bin,
 					Value: num,
 				},
-				Token: token,
 				Range: token.Range,
 			}
 		}
 
 		p.Diagnostics = append(p.Diagnostics, diag.Diagnostic{
-			Kind:     diag.DiagBitwiseLiteralInvalidBin,
+			Kind:     diag.BitwiseLiteralInvalidBin,
 			Range:    token.Range,
-			Severity: diag.SeverityError,
+			Severity: diag.Error,
 		})
 	default:
 		p.Diagnostics = append(p.Diagnostics, diag.Diagnostic{
-			Kind:     diag.DiagExpressionInvalid,
+			Kind:     diag.ExpressionInvalid,
 			Range:    token.Range,
-			Severity: diag.SeverityError,
+			Severity: diag.Error,
 		})
 	}
 
 	return Expression{
 		Kind:  Invalid{},
 		Range: token.Range,
-		Token: token,
 	}
 }
 
@@ -1228,9 +1213,9 @@ func (p *parser) parseNumberLiteral() Expression {
 				case IdentifierExpression, FloatLiteral:
 				default:
 					p.Diagnostics = append(p.Diagnostics, diag.Diagnostic{
-						Kind:     diag.DiagNumberLiteralInvalidExponent,
+						Kind:     diag.NumberLiteralInvalidExponent,
 						Range:    source.MergeRange(token.Range, endToken.Range),
-						Severity: diag.SeverityError,
+						Severity: diag.Error,
 					})
 				}
 			}
@@ -1239,14 +1224,13 @@ func (p *parser) parseNumberLiteral() Expression {
 					base:     num,
 					exponent: exponent,
 				},
-				Token: token,
 				Range: source.MergeRange(token.Range, endToken.Range),
 			}
 		} else {
 			p.Diagnostics = append(p.Diagnostics, diag.Diagnostic{
-				Kind:     diag.DiagNumberLiteralParseError,
+				Kind:     diag.NumberLiteralParseError,
 				Range:    token.Range,
-				Severity: diag.SeverityError,
+				Severity: diag.Error,
 			})
 		}
 	case dotCount == 0 && colonCount == 0:
@@ -1254,14 +1238,13 @@ func (p *parser) parseNumberLiteral() Expression {
 		if num, err := strconv.ParseInt(token.Lexeme, 10, 64); err == nil {
 			return Expression{
 				Kind:  IntegerLiteral(num),
-				Token: token,
 				Range: token.Range,
 			}
 		} else {
 			p.Diagnostics = append(p.Diagnostics, diag.Diagnostic{
-				Kind:     diag.DiagNumberLiteralParseError,
+				Kind:     diag.NumberLiteralParseError,
 				Range:    token.Range,
-				Severity: diag.SeverityError,
+				Severity: diag.Error,
 			})
 		}
 	case dotCount == 1 && colonCount == 1:
@@ -1269,41 +1252,38 @@ func (p *parser) parseNumberLiteral() Expression {
 		if bico, err := parseBico(token.Lexeme); err == nil {
 			return Expression{
 				Kind:  *bico,
-				Token: token,
 				Range: token.Range,
 			}
 		}
 		p.Diagnostics = append(p.Diagnostics, diag.Diagnostic{
-			Kind:     diag.DiagBicoLiteralParseError,
+			Kind:     diag.BicoLiteralParseError,
 			Range:    token.Range,
-			Severity: diag.SeverityError,
+			Severity: diag.Error,
 		})
 	case dotCount > 1 && colonCount == 0:
 		// version
 		if version, err := parseVersion(token.Lexeme); err == nil {
 			return Expression{
 				Kind:  *version,
-				Token: token,
 				Range: token.Range,
 			}
 		}
 		p.Diagnostics = append(p.Diagnostics, diag.Diagnostic{
-			Kind:     diag.DiagVersionLiteralParserError,
+			Kind:     diag.VersionLiteralParserError,
 			Range:    token.Range,
-			Severity: diag.SeverityError,
+			Severity: diag.Error,
 		})
 	default:
 		// invalid
 		p.Diagnostics = append(p.Diagnostics, diag.Diagnostic{
-			Kind:     diag.DiagExpressionInvalid,
+			Kind:     diag.ExpressionInvalid,
 			Range:    token.Range,
-			Severity: diag.SeverityError,
+			Severity: diag.Error,
 		})
 	}
 
 	return Expression{
 		Kind:  Invalid{},
-		Token: token,
 		Range: token.Range,
 	}
 }
@@ -1372,9 +1352,9 @@ func (p *parser) parseIdentifier() IdentifierExpression {
 			parts = append(parts, ReplacementIdentifier(replacement))
 			if p.expectAndAdvance([]l.TokenKind{l.SymbolRightParen}) != nil {
 				p.Diagnostics = append(p.Diagnostics, diag.Diagnostic{
-					Kind:     diag.DiagExpressionReplacementMissingClosingParentheses,
+					Kind:     diag.ExpressionReplacementMissingClosingParentheses,
 					Range:    source.MergeRange(startToken.Range, p.currentToken().Range),
-					Severity: diag.SeverityError,
+					Severity: diag.Error,
 				})
 			}
 		case l.SymbolDot:
@@ -1405,7 +1385,6 @@ func (p *parser) parseIdentifier() IdentifierExpression {
 
 	return IdentifierExpression{
 		Segments: segments,
-		Token:    startToken,
 		Range:    source.MergeRange(startToken.Range, endToken.Range),
 	}
 }
@@ -1430,7 +1409,6 @@ func (p *parser) parsePrefixedExpression() Expression {
 			Operator:   prefixOperator,
 			Expression: innerExpression,
 		},
-		Token: token,
 		Range: source.MergeRange(token.Range, innerExpression.Range),
 	}
 }

@@ -14,15 +14,6 @@
             ]
           }
         ],
-        "Token": {
-          "Kind": "LiteralIdentifier",
-          "Lexeme": "x",
-          "LeadingWhitespace": "",
-          "Location": {
-            "Line": 0,
-            "Column": 0
-          }
-        },
         "Range": {
           "Start": {
             "Line": 0,
@@ -37,15 +28,6 @@
       "Value": {
         "Type": "parser.IntegerLiteral",
         "Kind": 42,
-        "Token": {
-          "Kind": "LiteralNumber",
-          "Lexeme": "42",
-          "LeadingWhitespace": " ",
-          "Location": {
-            "Line": 0,
-            "Column": 4
-          }
-        },
         "Range": {
           "Start": {
             "Line": 0,
@@ -78,11 +60,11 @@
     "Range": {
       "Start": {
         "Line": 0,
-        "Column": 0
+        "Column": 6
       },
       "End": {
         "Line": 0,
-        "Column": 0
+        "Column": 7
       }
     },
     "LeadingComments": null,

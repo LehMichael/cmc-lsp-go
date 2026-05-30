@@ -10,33 +10,34 @@ type Diagnostic struct {
 	Severity DiagnosticSeverity
 }
 
+//go:generate go tool enumer -type=DiagnosticKind -json
 type DiagnosticKind int
 
 const (
-	DiagUnexpectedToken DiagnosticKind = iota
-	DiagFunctionInvalidIdentifier
-	DiagFunctionInvalidParameterDef
-	DiagFunctionInvalidOpeningBrace
-	DiagFunctionBodyClosingBraceMissing
-	DiagSectionInvalidDrive
-	DiagSectionInvalidChan
-	DiagSectionFormatUnrecogniced
-	DiagPreprocessorUnknown
-	DiagExpressionGroupedMissingClosingParentheses
-	DiagNumberLiteralInvalidExponent
-	DiagNumberLiteralParseError
-	DiagBicoLiteralParseError
-	DiagVersionLiteralParserError
-	DiagExpressionInvalid
-	DiagBitwiseLiteralInvalidHex
-	DiagBitwiseLiteralInvalidBin
-	DiagExpressionReplacementMissingClosingParentheses
-	DiagWhileEndMissing
-	DiagIfThenEndMissing
-	DiagIfElseIfEndMissing
-	DiagIfElseEndMissing
-	DiagCallStatementMalformed
-	DiagInvaliStatement
+	UnexpectedToken DiagnosticKind = iota
+	FunctionInvalidIdentifier
+	FunctionInvalidParameterDef
+	FunctionInvalidOpeningBrace
+	FunctionBodyClosingBraceMissing
+	SectionInvalidDrive
+	SectionInvalidChan
+	SectionFormatUnrecogniced
+	PreprocessorUnknown
+	ExpressionGroupedMissingClosingParentheses
+	NumberLiteralInvalidExponent
+	NumberLiteralParseError
+	BicoLiteralParseError
+	VersionLiteralParserError
+	ExpressionInvalid
+	BitwiseLiteralInvalidHex
+	BitwiseLiteralInvalidBin
+	ExpressionReplacementMissingClosingParentheses
+	WhileEndMissing
+	IfThenEndMissing
+	IfElseIfEndMissing
+	IfElseEndMissing
+	CallStatementMalformed
+	InvaliStatement
 
 	// lexer
 	SectionUnterminated
@@ -44,8 +45,9 @@ const (
 	NumberFormatUnterminated
 )
 
+//go:generate go tool enumer -type=DiagnosticSeverity -json
 type DiagnosticSeverity int
 
 const (
-	SeverityError DiagnosticSeverity = iota
+	Error DiagnosticSeverity = iota
 )

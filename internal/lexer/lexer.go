@@ -29,7 +29,7 @@ func NewLexer(input string) Lexer {
 	}
 }
 
-func Tokenize(input string) ([]Token, error) {
+func Tokenize(input string) ([]Token, []diag.Diagnostic) {
 	l := NewLexer(input)
 
 	var tokens []Token
@@ -42,7 +42,7 @@ func Tokenize(input string) ([]Token, error) {
 		}
 	}
 
-	return tokens, nil
+	return tokens, l.diagnostics
 }
 
 func (l *Lexer) NextToken() Token {
@@ -267,7 +267,8 @@ func (l *Lexer) createDelimitedToken(
 	if err != nil {
 		l.diagnostics = append(l.diagnostics, diag.Diagnostic{
 			Kind:     diagKind,
-			Severity: diag.SeverityError,
+			Severity: diag.Error,
+			Range:    source.NewRange(l.currentLine, startCol, l.currentColumn-startCol),
 		})
 	} else {
 		// this can also not error not error, since endchar is not a newline

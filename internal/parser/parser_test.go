@@ -24,20 +24,15 @@ func TestParser(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			tokens, err := lexer.Tokenize(string(src))
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			// todo diag
-			ast, diag := Parse(tokens)
+			tokens, diagnostics := lexer.Tokenize(string(src))
+			ast, diagnostics := Parse(tokens, diagnostics)
 
 			gotAst, err := json.MarshalIndent(ast, "", "  ")
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			gotDiag, err := json.MarshalIndent(diag, "", "  ")
+			gotDiag, err := json.MarshalIndent(diagnostics, "", "  ")
 			if err != nil {
 				t.Fatal(err)
 			}

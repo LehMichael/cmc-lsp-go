@@ -191,7 +191,6 @@ type ExpressionKind interface {
 
 type IdentifierExpression struct {
 	Segments []IdentifierSegment
-	Token    lexer.Token
 	Range    source.SourceRange
 }
 
@@ -357,7 +356,6 @@ func (Invalid) isExpressionKind() {}
 
 type Expression struct {
 	Kind  ExpressionKind
-	Token lexer.Token
 	Range source.SourceRange
 }
 

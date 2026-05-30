@@ -1,0 +1,16 @@
+[
+  {
+    "Kind": "StringUnterminated",
+    "Range": {
+      "Start": {
+        "Line": 0,
+        "Column": 4
+      },
+      "End": {
+        "Line": 0,
+        "Column": 9
+      }
+    },
+    "Severity": "SeverityError"
+  }
+]

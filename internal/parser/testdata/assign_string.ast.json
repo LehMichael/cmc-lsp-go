@@ -1,0 +1,74 @@
+[
+  {
+    "Type": "parser.Assignment",
+    "Kind": {
+      "Kind": "Assign",
+      "Target": {
+        "Segments": [
+          {
+            "Parts": [
+              {
+                "Type": "parser.LiteralIdentifier",
+                "Value": "x"
+              }
+            ]
+          }
+        ],
+        "Range": {
+          "Start": {
+            "Line": 0,
+            "Column": 0
+          },
+          "End": {
+            "Line": 0,
+            "Column": 1
+          }
+        }
+      },
+      "Value": {
+        "Type": "parser.StringLiteral",
+        "Kind": "\"asdf\"",
+        "Range": {
+          "Start": {
+            "Line": 0,
+            "Column": 4
+          },
+          "End": {
+            "Line": 0,
+            "Column": 10
+          }
+        }
+      }
+    },
+    "Range": {
+      "Start": {
+        "Line": 0,
+        "Column": 0
+      },
+      "End": {
+        "Line": 0,
+        "Column": 10
+      }
+    },
+    "LeadingComments": null,
+    "TrailingComment": null,
+    "InvalidAfter": null
+  },
+  {
+    "Type": "parser.NewLine",
+    "Kind": {},
+    "Range": {
+      "Start": {
+        "Line": 0,
+        "Column": 10
+      },
+      "End": {
+        "Line": 0,
+        "Column": 11
+      }
+    },
+    "LeadingComments": null,
+    "TrailingComment": null,
+    "InvalidAfter": null
+  }
+]
