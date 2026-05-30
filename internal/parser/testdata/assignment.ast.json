@@ -1,0 +1,92 @@
+[
+  {
+    "Type": "parser.Assignment",
+    "Kind": {
+      "Kind": "Assign",
+      "Target": {
+        "Segments": [
+          {
+            "Parts": [
+              {
+                "Type": "parser.LiteralIdentifier",
+                "Value": "x"
+              }
+            ]
+          }
+        ],
+        "Token": {
+          "Kind": "LiteralIdentifier",
+          "Lexeme": "x",
+          "LeadingWhitespace": "",
+          "Location": {
+            "Line": 0,
+            "Column": 0
+          }
+        },
+        "Range": {
+          "Start": {
+            "Line": 0,
+            "Column": 0
+          },
+          "End": {
+            "Line": 0,
+            "Column": 1
+          }
+        }
+      },
+      "Value": {
+        "Type": "parser.IntegerLiteral",
+        "Kind": 42,
+        "Token": {
+          "Kind": "LiteralNumber",
+          "Lexeme": "42",
+          "LeadingWhitespace": " ",
+          "Location": {
+            "Line": 0,
+            "Column": 4
+          }
+        },
+        "Range": {
+          "Start": {
+            "Line": 0,
+            "Column": 4
+          },
+          "End": {
+            "Line": 0,
+            "Column": 6
+          }
+        }
+      }
+    },
+    "Range": {
+      "Start": {
+        "Line": 0,
+        "Column": 0
+      },
+      "End": {
+        "Line": 0,
+        "Column": 6
+      }
+    },
+    "LeadingComments": null,
+    "TrailingComment": null,
+    "InvalidAfter": null
+  },
+  {
+    "Type": "parser.NewLine",
+    "Kind": {},
+    "Range": {
+      "Start": {
+        "Line": 0,
+        "Column": 0
+      },
+      "End": {
+        "Line": 0,
+        "Column": 0
+      }
+    },
+    "LeadingComments": null,
+    "TrailingComment": null,
+    "InvalidAfter": null
+  }
+]
