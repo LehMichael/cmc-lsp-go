@@ -1,0 +1,3 @@
+func hallo($,$) {
+    Up.test = 12
+}

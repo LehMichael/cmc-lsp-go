@@ -163,7 +163,6 @@ type FunctionStatement struct {
 	TrailingCommentStart     *string
 	ArgCount                 int
 	Body                     []Statement
-	EndToken                 lexer.Token
 	InvalidIdentTokens       []lexer.Token
 	InvalidParamTokens       []lexer.Token
 	InvalidAfterOpeningBrace []lexer.Token

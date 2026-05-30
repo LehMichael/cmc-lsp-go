@@ -1,0 +1,148 @@
+[
+  {
+    "Type": "parser.FunctionStatement",
+    "Kind": {
+      "Kind": "Function",
+      "Identifier": {
+        "Segments": [
+          {
+            "Parts": [
+              {
+                "Type": "parser.LiteralIdentifier",
+                "Value": "hallo"
+              }
+            ]
+          }
+        ],
+        "Range": {
+          "Start": {
+            "Line": 0,
+            "Column": 5
+          },
+          "End": {
+            "Line": 0,
+            "Column": 10
+          }
+        }
+      },
+      "LeadingCommentsEnd": null,
+      "TrailingCommentStart": null,
+      "ArgCount": 2,
+      "Body": [
+        {
+          "Type": "parser.Assignment",
+          "Kind": {
+            "Kind": "Assign",
+            "Target": {
+              "Segments": [
+                {
+                  "Parts": [
+                    {
+                      "Type": "parser.LiteralIdentifier",
+                      "Value": "Up"
+                    }
+                  ]
+                },
+                {
+                  "Parts": [
+                    {
+                      "Type": "parser.LiteralIdentifier",
+                      "Value": "test"
+                    }
+                  ]
+                }
+              ],
+              "Range": {
+                "Start": {
+                  "Line": 1,
+                  "Column": 4
+                },
+                "End": {
+                  "Line": 1,
+                  "Column": 11
+                }
+              }
+            },
+            "Value": {
+              "Type": "parser.IntegerLiteral",
+              "Kind": 12,
+              "Range": {
+                "Start": {
+                  "Line": 1,
+                  "Column": 14
+                },
+                "End": {
+                  "Line": 1,
+                  "Column": 16
+                }
+              }
+            }
+          },
+          "Range": {
+            "Start": {
+              "Line": 1,
+              "Column": 4
+            },
+            "End": {
+              "Line": 1,
+              "Column": 16
+            }
+          },
+          "LeadingComments": null,
+          "TrailingComment": null,
+          "InvalidAfter": null
+        },
+        {
+          "Type": "parser.NewLine",
+          "Kind": {},
+          "Range": {
+            "Start": {
+              "Line": 1,
+              "Column": 16
+            },
+            "End": {
+              "Line": 1,
+              "Column": 17
+            }
+          },
+          "LeadingComments": null,
+          "TrailingComment": null,
+          "InvalidAfter": null
+        }
+      ],
+      "InvalidIdentTokens": null,
+      "InvalidParamTokens": null,
+      "InvalidAfterOpeningBrace": null
+    },
+    "Range": {
+      "Start": {
+        "Line": 0,
+        "Column": 0
+      },
+      "End": {
+        "Line": 2,
+        "Column": 1
+      }
+    },
+    "LeadingComments": null,
+    "TrailingComment": null,
+    "InvalidAfter": null
+  },
+  {
+    "Type": "parser.NewLine",
+    "Kind": {},
+    "Range": {
+      "Start": {
+        "Line": 2,
+        "Column": 1
+      },
+      "End": {
+        "Line": 2,
+        "Column": 2
+      }
+    },
+    "LeadingComments": null,
+    "TrailingComment": null,
+    "InvalidAfter": null
+  }
+]

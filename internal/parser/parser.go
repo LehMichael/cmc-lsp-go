@@ -144,6 +144,7 @@ func (p *parser) parseFunctionStatement(leadingComments []string) Statement {
 			switch token.Kind {
 			case l.SymbolRightParen:
 				_ = p.advance()
+				break loop
 			case l.SymbolDollar:
 				arcCount++
 				nextToken := p.advance()
@@ -199,11 +200,13 @@ func (p *parser) parseFunctionStatement(leadingComments []string) Statement {
 	var invalidAfterClosingBraceTokens []l.Token
 
 	if invalidOpeningBraceTokens == nil {
-		_ = p.advance()
 		body, comments = p.parseBody(
 			[]l.TokenKind{l.SymbolRightBrace},
 			diag.FunctionBodyClosingBraceMissing,
 		)
+
+		endToken = p.currentToken()
+		_ = p.advance()
 
 		invalidAfterClosingBraceTokens, trailingCommentEnd = p.parseEndComment()
 	}
@@ -218,7 +221,6 @@ func (p *parser) parseFunctionStatement(leadingComments []string) Statement {
 			Body:                     body,
 			TrailingCommentStart:     trailingCommentStart,
 			LeadingCommentsEnd:       leadingCommentsEnd,
-			EndToken:                 endToken,
 			InvalidIdentTokens:       invalidIdentTokens,
 			InvalidParamTokens:       invalidParamTokens,
 			InvalidAfterOpeningBrace: invalidAfterOpeningBraceTokens,
@@ -1335,22 +1337,20 @@ func (p *parser) parseIdentifier() IdentifierExpression {
 	startToken := p.currentToken()
 	token := startToken
 	endToken := startToken
-	_ = p.advance()
 
 	var segments []IdentifierSegment
 	var parts []IdentifierPart
 
+loop:
 	for {
-		// fmt.Printf("identifier kind: %v\n", token.Kind.String())
 		switch token.Kind {
 		case l.LiteralIdentifier:
-			// parts = append(parts, IdentifierPart{Literal: token.Lexeme})
 			parts = append(parts, LiteralIdentifier(token.Lexeme))
 		case l.SymbolDollarParen:
+			_ = p.advance()
 			replacement := p.parseIdentifier()
-			// parts = append(parts, IdentifierPart{Replacement: replacement})
 			parts = append(parts, ReplacementIdentifier(replacement))
-			if p.expectAndAdvance([]l.TokenKind{l.SymbolRightParen}) != nil {
+			if t := p.expectAndAdvance([]l.TokenKind{l.SymbolRightParen}); t == nil {
 				p.Diagnostics = append(p.Diagnostics, diag.Diagnostic{
 					Kind:     diag.ExpressionReplacementMissingClosingParentheses,
 					Range:    source.MergeRange(startToken.Range, p.currentToken().Range),
@@ -1358,30 +1358,19 @@ func (p *parser) parseIdentifier() IdentifierExpression {
 				})
 			}
 		case l.SymbolDot:
-			segments = append(segments, IdentifierSegment{Parts: parts})
-			clear(parts)
+			var segment IdentifierSegment
+			segment.Parts = append(segment.Parts, parts...)
+			segments = append(segments, segment)
+			parts = parts[0:0]
 		default:
-			panic("")
+			break loop
 		}
-		endToken = token
-		token = p.currentToken()
 
-		if t := p.expectAndAdvance(
-			[]l.TokenKind{l.LiteralIdentifier, l.SymbolDollarParen, l.SymbolDot},
-		); t == nil {
-			break
-		}
+		endToken = p.currentToken()
+		token = p.advance()
 	}
 
-	// pj, _ := json.MarshalIndent(parts, "", "    ")
-	// fmt.Printf("parts %s\n", string(pj))
-
-	// fmt.Printf("parts %v\n", parts[0].Literal)
 	segments = append(segments, IdentifierSegment{Parts: parts})
-	// fmt.Printf("segments %v\n", len(segments))
-	// fmt.Printf("segments %v\n", segments[0].parts)
-	// sj, _ := json.MarshalIndent(segments, "", "    ")
-	// fmt.Printf("segments %s\n", string(sj))
 
 	return IdentifierExpression{
 		Segments: segments,

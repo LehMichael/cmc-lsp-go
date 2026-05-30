@@ -8,11 +8,11 @@ import (
 	"strings"
 )
 
-const _DiagnosticSeverityName = "SeverityError"
+const _DiagnosticSeverityName = "Error"
 
-var _DiagnosticSeverityIndex = [...]uint8{0, 13}
+var _DiagnosticSeverityIndex = [...]uint8{0, 5}
 
-const _DiagnosticSeverityLowerName = "severityerror"
+const _DiagnosticSeverityLowerName = "error"
 
 func (i DiagnosticSeverity) String() string {
 	if i < 0 || i >= DiagnosticSeverity(len(_DiagnosticSeverityIndex)-1) {
@@ -31,12 +31,12 @@ func _DiagnosticSeverityNoOp() {
 var _DiagnosticSeverityValues = []DiagnosticSeverity{Error}
 
 var _DiagnosticSeverityNameToValueMap = map[string]DiagnosticSeverity{
-	_DiagnosticSeverityName[0:13]:      Error,
-	_DiagnosticSeverityLowerName[0:13]: Error,
+	_DiagnosticSeverityName[0:5]:      Error,
+	_DiagnosticSeverityLowerName[0:5]: Error,
 }
 
 var _DiagnosticSeverityNames = []string{
-	_DiagnosticSeverityName[0:13],
+	_DiagnosticSeverityName[0:5],
 }
 
 // DiagnosticSeverityString retrieves an enum value from the enum constants string name.

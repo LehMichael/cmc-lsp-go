@@ -209,7 +209,7 @@ func (l *Lexer) createIdentifierToken(leadingWhitespace string) Token {
 	}
 
 	token := l.createTokeWhile(LiteralIdentifier, leadingWhitespace, func(r rune) bool {
-		return r == '(' || r == ')' || unicode.IsLetter(r) || unicode.IsNumber(r)
+		return r == '_' || unicode.IsLetter(r) || unicode.IsNumber(r)
 	})
 
 	switch {
@@ -358,7 +358,7 @@ func (l *Lexer) advancePosWhile(
 		l.pos++
 		l.currentColumn++
 	}
-	return nil
+	return errors.New("eof")
 }
 
 func (l *Lexer) advanceCount(count int) error {
