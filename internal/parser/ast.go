@@ -153,16 +153,17 @@ type NewLine struct{}
 func (NewLine) isStatementKind() {}
 
 type FunctionStatement struct {
-	Kind                     FunctionKind
-	Identifier               *IdentifierExpression
-	LeadingCommentsEnd       []string `json:",omitempty"`
-	TrailingCommentStart     *string  `json:",omitempty"`
-	ArgCount                 int
-	Body                     []Statement
-	InvalidIdentTokens       []lexer.Token `json:",omitempty"`
-	InvalidParamTokens       []lexer.Token `json:",omitempty"`
-	InvalidAfterOpeningBrace []lexer.Token `json:",omitempty"`
-	InvalidOpeningBrace      []lexer.Token `json:",omitempty"`
+	Kind                      FunctionKind
+	Identifier                *IdentifierExpression
+	LeadingCommentsEnd        []string `json:",omitempty"`
+	TrailingCommentStart      *string  `json:",omitempty"`
+	ArgCount                  int
+	MissingOpeningBrace       bool
+	Body                      []Statement
+	InvalidIdentTokens        []lexer.Token `json:",omitempty"`
+	InvalidParamTokens        []lexer.Token `json:",omitempty"`
+	InvalidAfterOpeningBrace  []lexer.Token `json:",omitempty"`
+	InvalidBeforeOpeningBrace []lexer.Token `json:",omitempty"`
 }
 
 func (FunctionStatement) isStatementKind() {}
