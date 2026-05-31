@@ -8,11 +8,11 @@ import (
 	"strings"
 )
 
-const _DiagnosticKindName = "UnexpectedTokenFunctionInvalidIdentifierFunctionInvalidParameterDefFunctionInvalidOpeningBraceFunctionBodyClosingBraceMissingSectionInvalidDriveSectionInvalidChanSectionFormatUnrecognicedPreprocessorUnknownExpressionGroupedMissingClosingParenthesesNumberLiteralInvalidExponentNumberLiteralParseErrorBicoLiteralParseErrorVersionLiteralParserErrorExpressionInvalidBitwiseLiteralInvalidHexBitwiseLiteralInvalidBinExpressionReplacementMissingClosingParenthesesWhileEndMissingIfThenEndMissingIfElseIfEndMissingIfElseEndMissingCallStatementMalformedInvaliStatementSectionUnterminatedStringUnterminatedNumberFormatUnterminated"
+const _DiagnosticKindName = "UnexpectedTokenFunctionInvalidIdentifierFunctionInvalidParameterDefFunctionInvalidBeforeOpeningBraceFunctionMissingOpeningBraceFunctionBodyClosingBraceMissingSectionInvalidDriveSectionInvalidChanSectionFormatUnrecognicedPreprocessorUnknownExpressionGroupedMissingClosingParenthesesNumberLiteralInvalidExponentNumberLiteralParseErrorBicoLiteralParseErrorVersionLiteralParserErrorExpressionInvalidBitwiseLiteralInvalidHexBitwiseLiteralInvalidBinExpressionReplacementMissingClosingParenthesesWhileEndMissingIfThenEndMissingIfElseIfEndMissingIfElseEndMissingCallStatementMalformedInvaliStatementSectionUnterminatedStringUnterminatedNumberFormatUnterminated"
 
-var _DiagnosticKindIndex = [...]uint16{0, 15, 40, 67, 94, 125, 144, 162, 187, 206, 248, 276, 299, 320, 345, 362, 386, 410, 456, 471, 487, 505, 521, 543, 558, 577, 595, 619}
+var _DiagnosticKindIndex = [...]uint16{0, 15, 40, 67, 100, 127, 158, 177, 195, 220, 239, 281, 309, 332, 353, 378, 395, 419, 443, 489, 504, 520, 538, 554, 576, 591, 610, 628, 652}
 
-const _DiagnosticKindLowerName = "unexpectedtokenfunctioninvalididentifierfunctioninvalidparameterdeffunctioninvalidopeningbracefunctionbodyclosingbracemissingsectioninvaliddrivesectioninvalidchansectionformatunrecognicedpreprocessorunknownexpressiongroupedmissingclosingparenthesesnumberliteralinvalidexponentnumberliteralparseerrorbicoliteralparseerrorversionliteralparsererrorexpressioninvalidbitwiseliteralinvalidhexbitwiseliteralinvalidbinexpressionreplacementmissingclosingparentheseswhileendmissingifthenendmissingifelseifendmissingifelseendmissingcallstatementmalformedinvalistatementsectionunterminatedstringunterminatednumberformatunterminated"
+const _DiagnosticKindLowerName = "unexpectedtokenfunctioninvalididentifierfunctioninvalidparameterdeffunctioninvalidbeforeopeningbracefunctionmissingopeningbracefunctionbodyclosingbracemissingsectioninvaliddrivesectioninvalidchansectionformatunrecognicedpreprocessorunknownexpressiongroupedmissingclosingparenthesesnumberliteralinvalidexponentnumberliteralparseerrorbicoliteralparseerrorversionliteralparsererrorexpressioninvalidbitwiseliteralinvalidhexbitwiseliteralinvalidbinexpressionreplacementmissingclosingparentheseswhileendmissingifthenendmissingifelseifendmissingifelseendmissingcallstatementmalformedinvalistatementsectionunterminatedstringunterminatednumberformatunterminated"
 
 func (i DiagnosticKind) String() string {
 	if i < 0 || i >= DiagnosticKind(len(_DiagnosticKindIndex)-1) {
@@ -28,33 +28,34 @@ func _DiagnosticKindNoOp() {
 	_ = x[UnexpectedToken-(0)]
 	_ = x[FunctionInvalidIdentifier-(1)]
 	_ = x[FunctionInvalidParameterDef-(2)]
-	_ = x[FunctionInvalidOpeningBrace-(3)]
-	_ = x[FunctionBodyClosingBraceMissing-(4)]
-	_ = x[SectionInvalidDrive-(5)]
-	_ = x[SectionInvalidChan-(6)]
-	_ = x[SectionFormatUnrecogniced-(7)]
-	_ = x[PreprocessorUnknown-(8)]
-	_ = x[ExpressionGroupedMissingClosingParentheses-(9)]
-	_ = x[NumberLiteralInvalidExponent-(10)]
-	_ = x[NumberLiteralParseError-(11)]
-	_ = x[BicoLiteralParseError-(12)]
-	_ = x[VersionLiteralParserError-(13)]
-	_ = x[ExpressionInvalid-(14)]
-	_ = x[BitwiseLiteralInvalidHex-(15)]
-	_ = x[BitwiseLiteralInvalidBin-(16)]
-	_ = x[ExpressionReplacementMissingClosingParentheses-(17)]
-	_ = x[WhileEndMissing-(18)]
-	_ = x[IfThenEndMissing-(19)]
-	_ = x[IfElseIfEndMissing-(20)]
-	_ = x[IfElseEndMissing-(21)]
-	_ = x[CallStatementMalformed-(22)]
-	_ = x[InvaliStatement-(23)]
-	_ = x[SectionUnterminated-(24)]
-	_ = x[StringUnterminated-(25)]
-	_ = x[NumberFormatUnterminated-(26)]
+	_ = x[FunctionInvalidBeforeOpeningBrace-(3)]
+	_ = x[FunctionMissingOpeningBrace-(4)]
+	_ = x[FunctionBodyClosingBraceMissing-(5)]
+	_ = x[SectionInvalidDrive-(6)]
+	_ = x[SectionInvalidChan-(7)]
+	_ = x[SectionFormatUnrecogniced-(8)]
+	_ = x[PreprocessorUnknown-(9)]
+	_ = x[ExpressionGroupedMissingClosingParentheses-(10)]
+	_ = x[NumberLiteralInvalidExponent-(11)]
+	_ = x[NumberLiteralParseError-(12)]
+	_ = x[BicoLiteralParseError-(13)]
+	_ = x[VersionLiteralParserError-(14)]
+	_ = x[ExpressionInvalid-(15)]
+	_ = x[BitwiseLiteralInvalidHex-(16)]
+	_ = x[BitwiseLiteralInvalidBin-(17)]
+	_ = x[ExpressionReplacementMissingClosingParentheses-(18)]
+	_ = x[WhileEndMissing-(19)]
+	_ = x[IfThenEndMissing-(20)]
+	_ = x[IfElseIfEndMissing-(21)]
+	_ = x[IfElseEndMissing-(22)]
+	_ = x[CallStatementMalformed-(23)]
+	_ = x[InvaliStatement-(24)]
+	_ = x[SectionUnterminated-(25)]
+	_ = x[StringUnterminated-(26)]
+	_ = x[NumberFormatUnterminated-(27)]
 }
 
-var _DiagnosticKindValues = []DiagnosticKind{UnexpectedToken, FunctionInvalidIdentifier, FunctionInvalidParameterDef, FunctionInvalidOpeningBrace, FunctionBodyClosingBraceMissing, SectionInvalidDrive, SectionInvalidChan, SectionFormatUnrecogniced, PreprocessorUnknown, ExpressionGroupedMissingClosingParentheses, NumberLiteralInvalidExponent, NumberLiteralParseError, BicoLiteralParseError, VersionLiteralParserError, ExpressionInvalid, BitwiseLiteralInvalidHex, BitwiseLiteralInvalidBin, ExpressionReplacementMissingClosingParentheses, WhileEndMissing, IfThenEndMissing, IfElseIfEndMissing, IfElseEndMissing, CallStatementMalformed, InvaliStatement, SectionUnterminated, StringUnterminated, NumberFormatUnterminated}
+var _DiagnosticKindValues = []DiagnosticKind{UnexpectedToken, FunctionInvalidIdentifier, FunctionInvalidParameterDef, FunctionInvalidBeforeOpeningBrace, FunctionMissingOpeningBrace, FunctionBodyClosingBraceMissing, SectionInvalidDrive, SectionInvalidChan, SectionFormatUnrecogniced, PreprocessorUnknown, ExpressionGroupedMissingClosingParentheses, NumberLiteralInvalidExponent, NumberLiteralParseError, BicoLiteralParseError, VersionLiteralParserError, ExpressionInvalid, BitwiseLiteralInvalidHex, BitwiseLiteralInvalidBin, ExpressionReplacementMissingClosingParentheses, WhileEndMissing, IfThenEndMissing, IfElseIfEndMissing, IfElseEndMissing, CallStatementMalformed, InvaliStatement, SectionUnterminated, StringUnterminated, NumberFormatUnterminated}
 
 var _DiagnosticKindNameToValueMap = map[string]DiagnosticKind{
 	_DiagnosticKindName[0:15]:         UnexpectedToken,
@@ -63,84 +64,87 @@ var _DiagnosticKindNameToValueMap = map[string]DiagnosticKind{
 	_DiagnosticKindLowerName[15:40]:   FunctionInvalidIdentifier,
 	_DiagnosticKindName[40:67]:        FunctionInvalidParameterDef,
 	_DiagnosticKindLowerName[40:67]:   FunctionInvalidParameterDef,
-	_DiagnosticKindName[67:94]:        FunctionInvalidOpeningBrace,
-	_DiagnosticKindLowerName[67:94]:   FunctionInvalidOpeningBrace,
-	_DiagnosticKindName[94:125]:       FunctionBodyClosingBraceMissing,
-	_DiagnosticKindLowerName[94:125]:  FunctionBodyClosingBraceMissing,
-	_DiagnosticKindName[125:144]:      SectionInvalidDrive,
-	_DiagnosticKindLowerName[125:144]: SectionInvalidDrive,
-	_DiagnosticKindName[144:162]:      SectionInvalidChan,
-	_DiagnosticKindLowerName[144:162]: SectionInvalidChan,
-	_DiagnosticKindName[162:187]:      SectionFormatUnrecogniced,
-	_DiagnosticKindLowerName[162:187]: SectionFormatUnrecogniced,
-	_DiagnosticKindName[187:206]:      PreprocessorUnknown,
-	_DiagnosticKindLowerName[187:206]: PreprocessorUnknown,
-	_DiagnosticKindName[206:248]:      ExpressionGroupedMissingClosingParentheses,
-	_DiagnosticKindLowerName[206:248]: ExpressionGroupedMissingClosingParentheses,
-	_DiagnosticKindName[248:276]:      NumberLiteralInvalidExponent,
-	_DiagnosticKindLowerName[248:276]: NumberLiteralInvalidExponent,
-	_DiagnosticKindName[276:299]:      NumberLiteralParseError,
-	_DiagnosticKindLowerName[276:299]: NumberLiteralParseError,
-	_DiagnosticKindName[299:320]:      BicoLiteralParseError,
-	_DiagnosticKindLowerName[299:320]: BicoLiteralParseError,
-	_DiagnosticKindName[320:345]:      VersionLiteralParserError,
-	_DiagnosticKindLowerName[320:345]: VersionLiteralParserError,
-	_DiagnosticKindName[345:362]:      ExpressionInvalid,
-	_DiagnosticKindLowerName[345:362]: ExpressionInvalid,
-	_DiagnosticKindName[362:386]:      BitwiseLiteralInvalidHex,
-	_DiagnosticKindLowerName[362:386]: BitwiseLiteralInvalidHex,
-	_DiagnosticKindName[386:410]:      BitwiseLiteralInvalidBin,
-	_DiagnosticKindLowerName[386:410]: BitwiseLiteralInvalidBin,
-	_DiagnosticKindName[410:456]:      ExpressionReplacementMissingClosingParentheses,
-	_DiagnosticKindLowerName[410:456]: ExpressionReplacementMissingClosingParentheses,
-	_DiagnosticKindName[456:471]:      WhileEndMissing,
-	_DiagnosticKindLowerName[456:471]: WhileEndMissing,
-	_DiagnosticKindName[471:487]:      IfThenEndMissing,
-	_DiagnosticKindLowerName[471:487]: IfThenEndMissing,
-	_DiagnosticKindName[487:505]:      IfElseIfEndMissing,
-	_DiagnosticKindLowerName[487:505]: IfElseIfEndMissing,
-	_DiagnosticKindName[505:521]:      IfElseEndMissing,
-	_DiagnosticKindLowerName[505:521]: IfElseEndMissing,
-	_DiagnosticKindName[521:543]:      CallStatementMalformed,
-	_DiagnosticKindLowerName[521:543]: CallStatementMalformed,
-	_DiagnosticKindName[543:558]:      InvaliStatement,
-	_DiagnosticKindLowerName[543:558]: InvaliStatement,
-	_DiagnosticKindName[558:577]:      SectionUnterminated,
-	_DiagnosticKindLowerName[558:577]: SectionUnterminated,
-	_DiagnosticKindName[577:595]:      StringUnterminated,
-	_DiagnosticKindLowerName[577:595]: StringUnterminated,
-	_DiagnosticKindName[595:619]:      NumberFormatUnterminated,
-	_DiagnosticKindLowerName[595:619]: NumberFormatUnterminated,
+	_DiagnosticKindName[67:100]:       FunctionInvalidBeforeOpeningBrace,
+	_DiagnosticKindLowerName[67:100]:  FunctionInvalidBeforeOpeningBrace,
+	_DiagnosticKindName[100:127]:      FunctionMissingOpeningBrace,
+	_DiagnosticKindLowerName[100:127]: FunctionMissingOpeningBrace,
+	_DiagnosticKindName[127:158]:      FunctionBodyClosingBraceMissing,
+	_DiagnosticKindLowerName[127:158]: FunctionBodyClosingBraceMissing,
+	_DiagnosticKindName[158:177]:      SectionInvalidDrive,
+	_DiagnosticKindLowerName[158:177]: SectionInvalidDrive,
+	_DiagnosticKindName[177:195]:      SectionInvalidChan,
+	_DiagnosticKindLowerName[177:195]: SectionInvalidChan,
+	_DiagnosticKindName[195:220]:      SectionFormatUnrecogniced,
+	_DiagnosticKindLowerName[195:220]: SectionFormatUnrecogniced,
+	_DiagnosticKindName[220:239]:      PreprocessorUnknown,
+	_DiagnosticKindLowerName[220:239]: PreprocessorUnknown,
+	_DiagnosticKindName[239:281]:      ExpressionGroupedMissingClosingParentheses,
+	_DiagnosticKindLowerName[239:281]: ExpressionGroupedMissingClosingParentheses,
+	_DiagnosticKindName[281:309]:      NumberLiteralInvalidExponent,
+	_DiagnosticKindLowerName[281:309]: NumberLiteralInvalidExponent,
+	_DiagnosticKindName[309:332]:      NumberLiteralParseError,
+	_DiagnosticKindLowerName[309:332]: NumberLiteralParseError,
+	_DiagnosticKindName[332:353]:      BicoLiteralParseError,
+	_DiagnosticKindLowerName[332:353]: BicoLiteralParseError,
+	_DiagnosticKindName[353:378]:      VersionLiteralParserError,
+	_DiagnosticKindLowerName[353:378]: VersionLiteralParserError,
+	_DiagnosticKindName[378:395]:      ExpressionInvalid,
+	_DiagnosticKindLowerName[378:395]: ExpressionInvalid,
+	_DiagnosticKindName[395:419]:      BitwiseLiteralInvalidHex,
+	_DiagnosticKindLowerName[395:419]: BitwiseLiteralInvalidHex,
+	_DiagnosticKindName[419:443]:      BitwiseLiteralInvalidBin,
+	_DiagnosticKindLowerName[419:443]: BitwiseLiteralInvalidBin,
+	_DiagnosticKindName[443:489]:      ExpressionReplacementMissingClosingParentheses,
+	_DiagnosticKindLowerName[443:489]: ExpressionReplacementMissingClosingParentheses,
+	_DiagnosticKindName[489:504]:      WhileEndMissing,
+	_DiagnosticKindLowerName[489:504]: WhileEndMissing,
+	_DiagnosticKindName[504:520]:      IfThenEndMissing,
+	_DiagnosticKindLowerName[504:520]: IfThenEndMissing,
+	_DiagnosticKindName[520:538]:      IfElseIfEndMissing,
+	_DiagnosticKindLowerName[520:538]: IfElseIfEndMissing,
+	_DiagnosticKindName[538:554]:      IfElseEndMissing,
+	_DiagnosticKindLowerName[538:554]: IfElseEndMissing,
+	_DiagnosticKindName[554:576]:      CallStatementMalformed,
+	_DiagnosticKindLowerName[554:576]: CallStatementMalformed,
+	_DiagnosticKindName[576:591]:      InvaliStatement,
+	_DiagnosticKindLowerName[576:591]: InvaliStatement,
+	_DiagnosticKindName[591:610]:      SectionUnterminated,
+	_DiagnosticKindLowerName[591:610]: SectionUnterminated,
+	_DiagnosticKindName[610:628]:      StringUnterminated,
+	_DiagnosticKindLowerName[610:628]: StringUnterminated,
+	_DiagnosticKindName[628:652]:      NumberFormatUnterminated,
+	_DiagnosticKindLowerName[628:652]: NumberFormatUnterminated,
 }
 
 var _DiagnosticKindNames = []string{
 	_DiagnosticKindName[0:15],
 	_DiagnosticKindName[15:40],
 	_DiagnosticKindName[40:67],
-	_DiagnosticKindName[67:94],
-	_DiagnosticKindName[94:125],
-	_DiagnosticKindName[125:144],
-	_DiagnosticKindName[144:162],
-	_DiagnosticKindName[162:187],
-	_DiagnosticKindName[187:206],
-	_DiagnosticKindName[206:248],
-	_DiagnosticKindName[248:276],
-	_DiagnosticKindName[276:299],
-	_DiagnosticKindName[299:320],
-	_DiagnosticKindName[320:345],
-	_DiagnosticKindName[345:362],
-	_DiagnosticKindName[362:386],
-	_DiagnosticKindName[386:410],
-	_DiagnosticKindName[410:456],
-	_DiagnosticKindName[456:471],
-	_DiagnosticKindName[471:487],
-	_DiagnosticKindName[487:505],
-	_DiagnosticKindName[505:521],
-	_DiagnosticKindName[521:543],
-	_DiagnosticKindName[543:558],
-	_DiagnosticKindName[558:577],
-	_DiagnosticKindName[577:595],
-	_DiagnosticKindName[595:619],
+	_DiagnosticKindName[67:100],
+	_DiagnosticKindName[100:127],
+	_DiagnosticKindName[127:158],
+	_DiagnosticKindName[158:177],
+	_DiagnosticKindName[177:195],
+	_DiagnosticKindName[195:220],
+	_DiagnosticKindName[220:239],
+	_DiagnosticKindName[239:281],
+	_DiagnosticKindName[281:309],
+	_DiagnosticKindName[309:332],
+	_DiagnosticKindName[332:353],
+	_DiagnosticKindName[353:378],
+	_DiagnosticKindName[378:395],
+	_DiagnosticKindName[395:419],
+	_DiagnosticKindName[419:443],
+	_DiagnosticKindName[443:489],
+	_DiagnosticKindName[489:504],
+	_DiagnosticKindName[504:520],
+	_DiagnosticKindName[520:538],
+	_DiagnosticKindName[538:554],
+	_DiagnosticKindName[554:576],
+	_DiagnosticKindName[576:591],
+	_DiagnosticKindName[591:610],
+	_DiagnosticKindName[610:628],
+	_DiagnosticKindName[628:652],
 }
 
 // DiagnosticKindString retrieves an enum value from the enum constants string name.

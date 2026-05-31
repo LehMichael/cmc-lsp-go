@@ -17,7 +17,8 @@ const (
 	UnexpectedToken DiagnosticKind = iota
 	FunctionInvalidIdentifier
 	FunctionInvalidParameterDef
-	FunctionInvalidOpeningBrace
+	FunctionInvalidBeforeOpeningBrace
+	FunctionMissingOpeningBrace
 	FunctionBodyClosingBraceMissing
 	SectionInvalidDrive
 	SectionInvalidChan

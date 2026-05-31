@@ -179,7 +179,7 @@ func (p *parser) parseFunctionStatement(leadingComments []string) Statement {
 	if t := p.expectAndAdvance([]l.TokenKind{l.SymbolLeftBrace}); t == nil {
 		noOpeningBrace = true
 		invalidOpeningBraceTokens = p.recoverFromError(
-			diag.FunctionInvalidOpeningBrace,
+			diag.FunctionInvalidBeforeOpeningBrace,
 			p.Pos,
 			[]l.TokenKind{l.SymbolLeftBrace, l.Comment, l.NewLine, l.EOF},
 		)
@@ -187,6 +187,13 @@ func (p *parser) parseFunctionStatement(leadingComments []string) Statement {
 			noOpeningBrace = false
 			_ = p.advance()
 		}
+	}
+
+	if noOpeningBrace {
+		p.Diagnostics = append(p.Diagnostics, diag.Diagnostic{
+			Kind:  diag.FunctionMissingOpeningBrace,
+			Range: p.currentToken().Range,
+		})
 	}
 
 	invalidAfterOpeningBraceTokens, trailingCommentStart := p.parseEndComment()
