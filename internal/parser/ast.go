@@ -17,9 +17,9 @@ type StatementKind interface {
 type Statement struct {
 	Kind            StatementKind
 	Range           source.SourceRange
-	LeadingComments []string
-	TrailingComment *string
-	InvalidAfter    []lexer.Token
+	LeadingComments []string      `json:",omitempty"`
+	TrailingComment *string       `json:",omitempty"`
+	InvalidAfter    []lexer.Token `json:",omitempty"`
 }
 
 func (s Statement) MarshalJSON() ([]byte, error) {
@@ -70,24 +70,24 @@ func (IfBlock) isStatementKind() {}
 
 type Else struct {
 	ThenBranch      []Statement
-	LeadingComments []string
-	TrailingComment *string
+	LeadingComments []string `json:",omitempty"`
+	TrailingComment *string  `json:",omitempty"`
 }
 
 type ElseIf struct {
 	Condition        *Expression
 	ThenBranch       []Statement
-	LeadingComments  []string
-	TrailingComment  *string
-	InvalidAfterExpr []lexer.Token
+	LeadingComments  []string      `json:",omitempty"`
+	TrailingComment  *string       `json:",omitempty"`
+	InvalidAfterExpr []lexer.Token `json:",omitempty"`
 }
 
 type WhileBlock struct {
 	Condition            *Expression
 	Body                 []Statement
-	LeadingCommentsEnd   []string
-	TrailingCommentStart *string
-	InvalidAfterExpr     []lexer.Token
+	LeadingCommentsEnd   []string      `json:",omitempty"`
+	TrailingCommentStart *string       `json:",omitempty"`
+	InvalidAfterExpr     []lexer.Token `json:",omitempty"`
 }
 
 func (WhileBlock) isStatementKind() {}
@@ -98,7 +98,7 @@ func (Call) isStatementKind() {}
 
 type SectionSwitch struct {
 	Kind             SectionSwitchKind
-	InvalidEndTokens []lexer.Token
+	InvalidEndTokens []lexer.Token `json:",omitempty"`
 }
 
 func (SectionSwitch) isStatementKind() {}
@@ -129,14 +129,10 @@ type DeleteStatement struct {
 
 func (DeleteStatement) isStatementKind() {}
 
-type CommentBlock []string
-
-func (CommentBlock) isStatementKind() {}
-
 type PreprocessorStatement struct {
 	kind            PreprocessorStatementKind
-	LeadingComments []string
-	TrailingComment string
+	LeadingComments []string `json:",omitempty"`
+	TrailingComment *string  `json:",omitempty"`
 }
 
 func (PreprocessorStatement) isStatementKind() {}
@@ -147,7 +143,7 @@ type PreprocessorStatementKind interface {
 
 type IncludePpStatement struct {
 	Path         string
-	InvalidToken *lexer.Token
+	InvalidToken *lexer.Token `json:",omitempty"`
 }
 
 func (IncludePpStatement) isPreprocessorStatementKind() {}
@@ -159,13 +155,14 @@ func (NewLine) isStatementKind() {}
 type FunctionStatement struct {
 	Kind                     FunctionKind
 	Identifier               *IdentifierExpression
-	LeadingCommentsEnd       []string
-	TrailingCommentStart     *string
+	LeadingCommentsEnd       []string `json:",omitempty"`
+	TrailingCommentStart     *string  `json:",omitempty"`
 	ArgCount                 int
 	Body                     []Statement
-	InvalidIdentTokens       []lexer.Token
-	InvalidParamTokens       []lexer.Token
-	InvalidAfterOpeningBrace []lexer.Token
+	InvalidIdentTokens       []lexer.Token `json:",omitempty"`
+	InvalidParamTokens       []lexer.Token `json:",omitempty"`
+	InvalidAfterOpeningBrace []lexer.Token `json:",omitempty"`
+	InvalidOpeningBrace      []lexer.Token `json:",omitempty"`
 }
 
 func (FunctionStatement) isStatementKind() {}
@@ -331,8 +328,8 @@ type CallExpression struct {
 	InvalidArgs         []lexer.Token
 	InvalidAfterArgs    []lexer.Token
 	MissingClosingParen bool
-	LeadingComments     []string
-	TrailingComment     *string
+	LeadingComments     []string `json:",omitempty"`
+	TrailingComment     *string  `json:",omitempty"`
 }
 
 func (CallExpression) isExpressionKind() {}

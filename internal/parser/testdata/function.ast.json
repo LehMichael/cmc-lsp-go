@@ -25,8 +25,6 @@
           }
         }
       },
-      "LeadingCommentsEnd": null,
-      "TrailingCommentStart": null,
       "ArgCount": 2,
       "Body": [
         {
@@ -87,10 +85,7 @@
               "Line": 1,
               "Column": 16
             }
-          },
-          "LeadingComments": null,
-          "TrailingComment": null,
-          "InvalidAfter": null
+          }
         },
         {
           "Type": "parser.NewLine",
@@ -104,15 +99,9 @@
               "Line": 1,
               "Column": 17
             }
-          },
-          "LeadingComments": null,
-          "TrailingComment": null,
-          "InvalidAfter": null
+          }
         }
-      ],
-      "InvalidIdentTokens": null,
-      "InvalidParamTokens": null,
-      "InvalidAfterOpeningBrace": null
+      ]
     },
     "Range": {
       "Start": {
@@ -123,10 +112,7 @@
         "Line": 2,
         "Column": 1
       }
-    },
-    "LeadingComments": null,
-    "TrailingComment": null,
-    "InvalidAfter": null
+    }
   },
   {
     "Type": "parser.NewLine",
@@ -140,9 +126,6 @@
         "Line": 2,
         "Column": 2
       }
-    },
-    "LeadingComments": null,
-    "TrailingComment": null,
-    "InvalidAfter": null
+    }
   }
 ]

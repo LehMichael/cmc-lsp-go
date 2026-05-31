@@ -1,0 +1,30 @@
+[
+  {
+    "Kind": "FunctionInvalidParameterDef",
+    "Range": {
+      "Start": {
+        "Line": 1,
+        "Column": 10
+      },
+      "End": {
+        "Line": 1,
+        "Column": 14
+      }
+    },
+    "Severity": "Error"
+  },
+  {
+    "Kind": "FunctionInvalidOpeningBrace",
+    "Range": {
+      "Start": {
+        "Line": 1,
+        "Column": 15
+      },
+      "End": {
+        "Line": 1,
+        "Column": 21
+      }
+    },
+    "Severity": "Error"
+  }
+]

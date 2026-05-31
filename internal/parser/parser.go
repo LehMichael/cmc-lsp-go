@@ -137,26 +137,23 @@ func (p *parser) parseFunctionStatement(leadingComments []string) Statement {
 	}
 
 	arcCount := 0
+
 	if !invalidParams {
-		token := p.currentToken()
+		// 	token := p.currentToken()
 	loop:
 		for {
-			switch token.Kind {
+			if t := p.expectAndAdvance([]l.TokenKind{l.SymbolDollar}); t == nil {
+				break
+			}
+			arcCount++
+			switch p.currentToken().Kind {
+			case l.SymbolComma:
+				_ = p.advance()
 			case l.SymbolRightParen:
 				_ = p.advance()
 				break loop
-			case l.SymbolDollar:
-				arcCount++
-				nextToken := p.advance()
-				switch nextToken.Kind {
-				case l.SymbolComma:
-					_ = p.advance()
-				case l.SymbolRightParen:
-				default:
-					invalidParams = true
-				}
-				token = p.currentToken()
 			default:
+				arcCount = 0
 				invalidParams = true
 				break loop
 			}
@@ -168,30 +165,33 @@ func (p *parser) parseFunctionStatement(leadingComments []string) Statement {
 		invalidParamTokens = p.recoverFromError(
 			diag.FunctionInvalidParameterDef,
 			paramTokenPos,
-			[]l.TokenKind{l.SymbolLeftBrace, l.NewLine, l.Comment, l.EOF},
+			[]l.TokenKind{l.SymbolLeftBrace, l.SymbolRightParen, l.NewLine, l.Comment, l.EOF},
 		)
+
+		if p.currentToken().Kind == l.SymbolRightParen {
+			invalidParamTokens = append(invalidParamTokens, p.currentToken())
+			_ = p.advance()
+		}
 	}
 
+	noOpeningBrace := false
 	var invalidOpeningBraceTokens []l.Token
 	if t := p.expectAndAdvance([]l.TokenKind{l.SymbolLeftBrace}); t == nil {
+		noOpeningBrace = true
 		invalidOpeningBraceTokens = p.recoverFromError(
 			diag.FunctionInvalidOpeningBrace,
-			paramTokenPos,
-			[]l.TokenKind{l.Comment, l.NewLine, l.EOF},
-		)
-	}
-
-	trailingCommentStart := p.parseOptionalComment()
-
-	var invalidAfterOpeningBraceTokens []l.Token
-	if t := p.expectAndAdvance([]l.TokenKind{l.NewLine}); t == nil {
-		invalidAfterOpeningBraceTokens = p.recoverFromError(
-			diag.UnexpectedToken,
 			p.Pos,
-			[]l.TokenKind{l.NewLine, l.EOF},
+			[]l.TokenKind{l.SymbolLeftBrace, l.Comment, l.NewLine, l.EOF},
 		)
-		_ = p.advance()
+		if p.currentToken().Kind == l.SymbolLeftBrace {
+			noOpeningBrace = false
+			_ = p.advance()
+		}
 	}
+
+	invalidAfterOpeningBraceTokens, trailingCommentStart := p.parseEndComment()
+	// consume newline
+	_ = p.advance()
 
 	var comments []string
 	var body []Statement
@@ -199,7 +199,7 @@ func (p *parser) parseFunctionStatement(leadingComments []string) Statement {
 	var trailingCommentEnd *string
 	var invalidAfterClosingBraceTokens []l.Token
 
-	if invalidOpeningBraceTokens == nil {
+	if !noOpeningBrace {
 		body, comments = p.parseBody(
 			[]l.TokenKind{l.SymbolRightBrace},
 			diag.FunctionBodyClosingBraceMissing,
@@ -224,6 +224,7 @@ func (p *parser) parseFunctionStatement(leadingComments []string) Statement {
 			InvalidIdentTokens:       invalidIdentTokens,
 			InvalidParamTokens:       invalidParamTokens,
 			InvalidAfterOpeningBrace: invalidAfterOpeningBraceTokens,
+			InvalidOpeningBrace:      invalidOpeningBraceTokens,
 		},
 		LeadingComments: leadingComments,
 		InvalidAfter:    invalidAfterClosingBraceTokens,
@@ -278,14 +279,9 @@ func (p *parser) parsePreprocessor(leadingComments []string) Statement {
 func (p *parser) parseIdentifierStatement(leadingComments []string) Statement {
 	identifier := p.parseIdentifier()
 
-	// ij, _ := json.MarshalIndent(identifier, "", "    ")
-	// fmt.Printf("identifier %s\n", string(ij))
-
 	token := p.currentToken()
 
 	isAssignment := tokenToAssignmentKind(token) != nil
-
-	// fmt.Printf("kind: %v, isAssignment %v\n", token.Kind.String(), isAssignment)
 
 	switch {
 	case token.Kind == l.SymbolLeftParen:

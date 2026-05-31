@@ -49,10 +49,7 @@
         "Line": 0,
         "Column": 9
       }
-    },
-    "LeadingComments": null,
-    "TrailingComment": null,
-    "InvalidAfter": null
+    }
   },
   {
     "Type": "parser.NewLine",
@@ -66,9 +63,6 @@
         "Line": 0,
         "Column": 10
       }
-    },
-    "LeadingComments": null,
-    "TrailingComment": null,
-    "InvalidAfter": null
+    }
   }
 ]

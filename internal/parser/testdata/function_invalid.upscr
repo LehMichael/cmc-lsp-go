@@ -1,0 +1,5 @@
+; leading
+func hallo($$) test { ; comment
+    Up.test = 12
+    ; asdf1
+} ;asdf2
