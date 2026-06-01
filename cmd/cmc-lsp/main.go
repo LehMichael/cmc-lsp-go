@@ -1,7 +1,7 @@
 package main
 
-import "fmt"
+import "github.com/lehmichael/cmc-lsp-go/internal/lsp"
 
 func main() {
-	fmt.Println("Hello, World!")
+	lsp.NewLsp()
 }
