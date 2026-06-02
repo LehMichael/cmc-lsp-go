@@ -1,7 +1,11 @@
 package main
 
-import "github.com/lehmichael/cmc-lsp-go/internal/lsp"
+import (
+	"os"
+
+	"github.com/lehmichael/cmc-lsp-go/internal/lsp"
+)
 
 func main() {
-	lsp.NewLsp()
+	os.Exit(lsp.NewLsp())
 }

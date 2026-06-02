@@ -1,22 +1,57 @@
 package lsp
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"errors"
+	"fmt"
+)
 
-type Message struct {
+type message struct {
 	Jsonrpc string `json:"jsonrpc"`
 }
 
-type RequestMessage struct {
-	Message
-	ID     int    `json:"id"`
-	Method string `json:"method"`
-	Params Params `json:"params"`
+type responseMessage struct {
+	message
+	/**
+	 * The request id.
+	 */
+	ID messageID `json:"id,omitempty"`
+
+	/**
+	 * The result of a request. This member is REQUIRED on success.
+	 * This member MUST NOT exist if there was an error invoking the method.
+	 */
+	Result lSPAny `json:"result,omitempty"`
+
+	/**
+	 * The error object in case a request fails.
+	 */
+	Error *responseError `json:"error,omitempty"`
 }
 
-func (msg *RequestMessage) UnmarshalJSON(data []byte) error {
+type requestMessage struct {
+	message
+	ID     messageID `json:"id"`
+	Method string    `json:"method"`
+	Params params    `json:"params,omitempty"`
+}
+
+type messageID interface {
+	isMessageID()
+}
+
+type intMessageID int
+
+func (intMessageID) isMessageID() {}
+
+type stringMessageID string
+
+func (stringMessageID) isMessageID() {}
+
+func (msg *requestMessage) UnmarshalJSON(data []byte) error {
 	var raw struct {
-		Message
-		ID     int             `json:"id"`
+		message
+		ID     json.RawMessage `json:"id"`
 		Method string          `json:"method"`
 		Params json.RawMessage `json:"params"`
 	}
@@ -24,31 +59,58 @@ func (msg *RequestMessage) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
+	if len(raw.ID) > 0 {
+		switch raw.ID[0] {
+		case '"':
+			var s string
+			if err := json.Unmarshal(raw.ID, &s); err != nil {
+				return err
+			}
+			msg.ID = stringMessageID(s)
+		case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '-':
+			var i int
+			if err := json.Unmarshal(raw.ID, &i); err != nil {
+				return err
+			}
+			msg.ID = intMessageID(i)
+		case 'n':
+			msg.ID = nil
+		default:
+			return fmt.Errorf("expected string or number, got: %s", raw.ID)
+		}
+	} else {
+		msg.ID = nil
+	}
+
 	msg.Jsonrpc = raw.Jsonrpc
-	msg.ID = raw.ID
 	msg.Method = raw.Method
+	msg.Params = nil
 
 	switch msg.Method {
 	case "initialize":
-		var i InitializeParams
+		var i initializeParams
 		if err := json.Unmarshal(raw.Params, &i); err != nil {
 			return err
 		}
 		msg.Params = i
+	case "shutdown":
+	case "exit":
+	default:
+		return errors.New("unknown method")
 	}
 
 	return nil
 }
 
-type Params interface {
+type params interface {
 	isParams()
 }
 
-type WorkProgressParams struct {
+type workProgressParams struct {
 	workDoneToken progressToken
 }
 
-func (WorkProgressParams) isParams() {}
+func (workProgressParams) isParams() {}
 
 type progressToken interface {
 	isProgressToken()
@@ -63,12 +125,12 @@ type intProgressToken int
 func (intProgressToken) isProgressToken() {}
 
 type (
-	DocumentURI string
-	URI         string
+	documentURI string
+	uRI         string
 )
 
-type InitializeParams struct {
-	WorkProgressParams
+type initializeParams struct {
+	workProgressParams
 
 	/**
 	 * The process Id of the parent process that started the server. Is null if
@@ -122,7 +184,7 @@ type InitializeParams struct {
 	 *
 	 * @deprecated in favour of `workspaceFolders`
 	 */
-	RootURI *DocumentURI `json:"RootURI,omitempty"`
+	RootURI *documentURI `json:"RootURI,omitempty"`
 
 	/**
 	 * User provided initialization options.
@@ -132,12 +194,12 @@ type InitializeParams struct {
 	/**
 	 * The capabilities provided by the client (editor or tool)
 	 */
-	Capabilities ClientCapabilities `json:"capabilities"`
+	Capabilities clientCapabilities `json:"capabilities"`
 
 	/**
 	 * The initial trace setting. If omitted trace is disabled ('off').
 	 */
-	Trace *TraceValue `json:"trace,omitempty"`
+	Trace *traceValue `json:"trace,omitempty"`
 
 	/**
 	 * The workspace folders configured in the client when the server starts.
@@ -147,22 +209,22 @@ type InitializeParams struct {
 	 *
 	 * @since 3.6.0
 	 */
-	WorkspaceFolders []WorkspaceFolder `json:"workspaceFolders,omitempty"`
+	WorkspaceFolders []workspaceFolder `json:"workspaceFolders,omitempty"`
 }
 
-type TraceValue string
+type traceValue string
 
 const (
-	TraceValueOff      TraceValue = "off"
-	TraceValueMessages TraceValue = "messages"
-	TraceValueVerbose  TraceValue = "verbose"
+	TraceValueOff      traceValue = "off"
+	TraceValueMessages traceValue = "messages"
+	TraceValueVerbose  traceValue = "verbose"
 )
 
-type WorkspaceFolder struct {
+type workspaceFolder struct {
 	/**
 	 * The associated URI for this workspace folder.
 	 */
-	URI URI `json:"uri"`
+	URI uRI `json:"uri"`
 
 	/**
 	 * The name of the workspace folder. Used to refer to this
@@ -171,7 +233,7 @@ type WorkspaceFolder struct {
 	Name string `json:"name"`
 }
 
-type ClientCapabilities struct {
+type clientCapabilities struct {
 	/**
 	 * Workspace specific client capabilities.
 	 */
@@ -186,29 +248,29 @@ type ClientCapabilities struct {
 		/**
 		 * Capabilities specific to `WorkspaceEdit`s
 		 */
-		WorkspaceEdit *WorkspaceEditClientCapabilities `json:"workspaceEdit,omitempty"`
+		WorkspaceEdit *workspaceEditClientCapabilities `json:"workspaceEdit,omitempty"`
 
 		/**
 		 * Capabilities specific to the `workspace/didChangeConfiguration`
 		 * notification.
 		 */
-		DidChangeConfiguration *DidChangeConfigurationClientCapabilities `json:"didChangeConfiguration,omitempty"`
+		DidChangeConfiguration *didChangeConfigurationClientCapabilities `json:"didChangeConfiguration,omitempty"`
 
 		/**
 		 * Capabilities specific to the `workspace/didChangeWatchedFiles`
 		 * notification.
 		 */
-		DidChangeWatchedFiles *DidChangeWatchedFilesClientCapabilities `json:"didChangeWatchedFiles,omitempty"`
+		DidChangeWatchedFiles *didChangeWatchedFilesClientCapabilities `json:"didChangeWatchedFiles,omitempty"`
 
 		/**
 		 * Capabilities specific to the `workspace/symbol` request.
 		 */
-		Symbol *WorkspaceSymbolClientCapabilities `json:"symbol,omitempty"`
+		Symbol *workspaceSymbolClientCapabilities `json:"symbol,omitempty"`
 
 		/**
 		 * Capabilities specific to the `workspace/executeCommand` request.
 		 */
-		ExecuteCommand *ExecuteCommandClientCapabilities `json:"executeCommand,omitempty"`
+		ExecuteCommand *executeCommandClientCapabilities `json:"executeCommand,omitempty"`
 
 		/**
 		 * The client has support for workspace folders.
@@ -230,7 +292,7 @@ type ClientCapabilities struct {
 		 *
 		 * @since 3.16.0
 		 */
-		SemanticTokens *SemanticTokensWorkspaceClientCapabilities `json:"semanticTokens,omitempty"`
+		SemanticTokens *semanticTokensWorkspaceClientCapabilities `json:"semanticTokens,omitempty"`
 
 		/**
 		 * Capabilities specific to the code lens requests scoped to the
@@ -238,7 +300,7 @@ type ClientCapabilities struct {
 		 *
 		 * @since 3.16.0
 		 */
-		CodeLens *CodeLensWorkspaceClientCapabilities `json:"codeLens,omitempty"`
+		CodeLens *codeLensWorkspaceClientCapabilities `json:"codeLens,omitempty"`
 
 		/**
 		 * The client has support for file requests/notifications.
@@ -288,34 +350,34 @@ type ClientCapabilities struct {
 		 *
 		 * @since 3.17.0
 		 */
-		InlineValue *InlineValueWorkspaceClientCapabilities `json:"inlineValue,omitempty"`
+		InlineValue *inlineValueWorkspaceClientCapabilities `json:"inlineValue,omitempty"`
 
 		/**
 		 * Client workspace capabilities specific to inlay hints.
 		 *
 		 * @since 3.17.0
 		 */
-		InlayHint *InlayHintWorkspaceClientCapabilities `json:"inlayHint,omitempty"`
+		InlayHint *inlayHintWorkspaceClientCapabilities `json:"inlayHint,omitempty"`
 
 		/**
 		 * Client workspace capabilities specific to diagnostics.
 		 *
 		 * @since 3.17.0.
 		 */
-		Diagnostics *DiagnosticWorkspaceClientCapabilities `json:"diagnostics,omitempty"`
+		Diagnostics *diagnosticWorkspaceClientCapabilities `json:"diagnostics,omitempty"`
 	} `json:"workspace"`
 
 	/**
 	 * Text document specific client capabilities.
 	 */
-	TextDocument *TextDocumentClientCapabilities `json:"textDocument,omitempty"`
+	TextDocument *textDocumentClientCapabilities `json:"textDocument,omitempty"`
 
 	/**
 	 * Capabilities specific to the notebook document support.
 	 *
 	 * @since 3.17.0
 	 */
-	NotebookDocument *NotebookDocumentClientCapabilities `json:"notebookDocument,omitempty"`
+	NotebookDocument *notebookDocumentClientCapabilities `json:"notebookDocument,omitempty"`
 
 	/**
 	 * Window specific client capabilities.
@@ -339,14 +401,14 @@ type ClientCapabilities struct {
 		 *
 		 * @since 3.16.0
 		 */
-		ShowMessage *ShowMessageRequestClientCapabilities `json:"showMessage,omitempty"`
+		ShowMessage *showMessageRequestClientCapabilities `json:"showMessage,omitempty"`
 
 		/**
 		 * Client capabilities for the show document request.
 		 *
 		 * @since 3.16.0
 		 */
-		ShowDocument *ShowDocumentClientCapabilities `json:"showDocument,omitempty"`
+		ShowDocument *showDocumentClientCapabilities `json:"showDocument,omitempty"`
 	} `json:"window,omitempty"`
 
 	/**
@@ -382,14 +444,14 @@ type ClientCapabilities struct {
 		 *
 		 * @since 3.16.0
 		 */
-		RegularExpressions *RegularExpressionsClientCapabilities `json:"regularExpressions,omitempty"`
+		RegularExpressions *regularExpressionsClientCapabilities `json:"regularExpressions,omitempty"`
 
 		/**
 		 * Client capabilities specific to the client's markdown parser.
 		 *
 		 * @since 3.16.0
 		 */
-		Markdown *MarkdownClientCapabilities `json:"markdown,omitempty"`
+		Markdown *markdownClientCapabilities `json:"markdown,omitempty"`
 
 		/**
 		 * The position encodings supported by the client. Client and server
@@ -411,48 +473,18 @@ type ClientCapabilities struct {
 		 *
 		 * @since 3.17.0
 		 */
-		PositionEncodings []PositionEncodingKind `json:"positionEncodings,omitempty"`
+		PositionEncodings []positionEncodingKind `json:"positionEncodings,omitempty"`
 	} `json:"general,omitempty"`
 
 	/**
 	 * Experimental client capabilities.
 	 */
-	Experimental *LSPAny `json:"experimental,omitempty"`
+	Experimental lSPAny `json:"experimental,omitempty"`
 }
 
-type LSPAny interface {
-	isLspAny()
-}
+type lSPAny any
 
-type LSPObject map[string]LSPAny
-
-func (LSPObject) isLspAny() {}
-
-type LSPArray []LSPAny
-
-func (LSPArray) isLspAny() {}
-
-type LSPString string
-
-func (LSPString) isLspAny() {}
-
-type LSPInteger int
-
-func (LSPInteger) isLspAny() {}
-
-type LSPUInteger uint
-
-func (LSPUInteger) isLspAny() {}
-
-type LSPDecimal float64
-
-func (LSPDecimal) isLspAny() {}
-
-type LSPBoolean bool
-
-func (LSPBoolean) isLspAny() {}
-
-type WorkspaceEditClientCapabilities struct {
+type workspaceEditClientCapabilities struct {
 	/**
 	 * The client supports versioned document changes in `WorkspaceEdit`s
 	 */
@@ -464,7 +496,7 @@ type WorkspaceEditClientCapabilities struct {
 	 *
 	 * @since 3.13.0
 	 */
-	ResourceOperations []ResourceOperationKind `json:"resourceOperations,omitempty"`
+	ResourceOperations []resourceOperationKind `json:"resourceOperations,omitempty"`
 
 	/**
 	 * The failure handling strategy of a client if applying the workspace edit
@@ -472,7 +504,7 @@ type WorkspaceEditClientCapabilities struct {
 	 *
 	 * @since 3.13.0
 	 */
-	FailureHandling *FailureHandlingKind `json:"failureHandling,omitempty"`
+	FailureHandling *failureHandlingKind `json:"failureHandling,omitempty"`
 
 	/**
 	 * Whether the client normalizes line endings to the client specific
@@ -500,7 +532,7 @@ type WorkspaceEditClientCapabilities struct {
 	} `json:"changeAnnotationSupport,omitempty"`
 }
 
-type DidChangeConfigurationClientCapabilities struct {
+type didChangeConfigurationClientCapabilities struct {
 	/**
 	 * Did change configuration notification supports dynamic registration.
 	 *
@@ -509,7 +541,7 @@ type DidChangeConfigurationClientCapabilities struct {
 	DynamicRegistration *bool `json:"dynamicRegistration,omitempty"`
 }
 
-type DidChangeWatchedFilesClientCapabilities struct {
+type didChangeWatchedFilesClientCapabilities struct {
 	/**
 	 * Did change watched files notification supports dynamic registration.
 	 * Please note that the current protocol doesn't support static
@@ -526,7 +558,7 @@ type DidChangeWatchedFilesClientCapabilities struct {
 	RelativePatternSupport *bool `json:"relativePatternSupport,omitempty"`
 }
 
-type WorkspaceSymbolClientCapabilities struct {
+type workspaceSymbolClientCapabilities struct {
 	/**
 	 * Symbol request supports dynamic registration.
 	 */
@@ -547,7 +579,7 @@ type WorkspaceSymbolClientCapabilities struct {
 		 * the symbol kinds from `File` to `Array` as defined in
 		 * the initial version of the protocol.
 		 */
-		ValueSet []SymbolKind `json:"valueSet,omitempty"`
+		ValueSet []symbolKind `json:"valueSet,omitempty"`
 	} `json:"symbolKind,omitempty"`
 
 	/**
@@ -560,7 +592,7 @@ type WorkspaceSymbolClientCapabilities struct {
 		/**
 		 * The tags supported by the client.
 		 */
-		ValueSet []SymbolTag `json:"valueSet,omitempty"`
+		ValueSet []symbolTag `json:"valueSet,omitempty"`
 	} `json:"tagSupport,omitempty"`
 
 	/**
@@ -579,14 +611,14 @@ type WorkspaceSymbolClientCapabilities struct {
 	} `json:"resolveSupport,omitempty"`
 }
 
-type ExecuteCommandClientCapabilities struct {
+type executeCommandClientCapabilities struct {
 	/**
 	 * Execute command supports dynamic registration.
 	 */
 	DynamicRegistration *bool `json:"dynamicRegistration,omitempty"`
 }
 
-type SemanticTokensWorkspaceClientCapabilities struct {
+type semanticTokensWorkspaceClientCapabilities struct {
 	/**
 	 * Whether the client implementation supports a refresh request sent from
 	 * the server to the client.
@@ -599,7 +631,7 @@ type SemanticTokensWorkspaceClientCapabilities struct {
 	RefreshSupport *bool `json:"refreshSupport,omitempty"`
 }
 
-type CodeLensWorkspaceClientCapabilities struct {
+type codeLensWorkspaceClientCapabilities struct {
 	/**
 	 * Whether the client implementation supports a refresh request sent from the
 	 * server to the client.
@@ -612,9 +644,9 @@ type CodeLensWorkspaceClientCapabilities struct {
 	RefreshSupport *bool `json:"refreshSupport,omitempty"`
 }
 
-// InlineValueWorkspaceClientCapabilities Client workspace capabilities specific to inline values.
+// inlineValueWorkspaceClientCapabilities Client workspace capabilities specific to inline values.
 // since 3.17.0
-type InlineValueWorkspaceClientCapabilities struct {
+type inlineValueWorkspaceClientCapabilities struct {
 	/**
 	 * Whether the client implementation supports a refresh request sent from
 	 * the server to the client.
@@ -627,9 +659,9 @@ type InlineValueWorkspaceClientCapabilities struct {
 	RefreshSupport *bool `json:"refreshSupport,omitempty"`
 }
 
-// InlayHintWorkspaceClientCapabilities Client workspace capabilities specific to inlay hints.
+// inlayHintWorkspaceClientCapabilities Client workspace capabilities specific to inlay hints.
 // since 3.17.0
-type InlayHintWorkspaceClientCapabilities struct {
+type inlayHintWorkspaceClientCapabilities struct {
 	/**
 	 * Whether the client implementation supports a refresh request sent from
 	 * the server to the client.
@@ -642,9 +674,9 @@ type InlayHintWorkspaceClientCapabilities struct {
 	RefreshSupport *bool `json:"refreshSupport,omitempty"`
 }
 
-// DiagnosticWorkspaceClientCapabilities Workspace client capabilities specific to diagnostic pull requests.
+// diagnosticWorkspaceClientCapabilities Workspace client capabilities specific to diagnostic pull requests.
 // since 3.17.0
-type DiagnosticWorkspaceClientCapabilities struct {
+type diagnosticWorkspaceClientCapabilities struct {
 	/**
 	 * Whether the client implementation supports a refresh request sent from
 	 * the server to the client.
@@ -657,80 +689,80 @@ type DiagnosticWorkspaceClientCapabilities struct {
 	RefreshSupport *bool `json:"refreshSupport,omitempty"`
 }
 
-// TextDocumentClientCapabilities Text document specific client capabilities.
-type TextDocumentClientCapabilities struct {
-	Synchronization *TextDocumentSyncClientCapabilities `json:"synchronization,omitempty"`
+// textDocumentClientCapabilities Text document specific client capabilities.
+type textDocumentClientCapabilities struct {
+	Synchronization *textDocumentSyncClientCapabilities `json:"synchronization,omitempty"`
 
 	/**
 	 * Capabilities specific to the `textDocument/completion` request.
 	 */
-	Completion *CompletionClientCapabilities `json:"completion,omitempty"`
+	Completion *completionClientCapabilities `json:"completion,omitempty"`
 
 	/**
 	 * Capabilities specific to the `textDocument/hover` request.
 	 */
-	Hover *HoverClientCapabilities `json:"hover,omitempty"`
+	Hover *hoverClientCapabilities `json:"hover,omitempty"`
 
 	/**
 	 * Capabilities specific to the `textDocument/signatureHelp` request.
 	 */
-	SignatureHelp *SignatureHelpClientCapabilities `json:"signatureHelp,omitempty"`
+	SignatureHelp *signatureHelpClientCapabilities `json:"signatureHelp,omitempty"`
 
 	/**
 	 * Capabilities specific to the `textDocument/declaration` request.
 	 *
 	 * @since 3.14.0
 	 */
-	Declaration *DeclarationClientCapabilities `json:"declaration,omitempty"`
+	Declaration *declarationClientCapabilities `json:"declaration,omitempty"`
 
 	/**
 	 * Capabilities specific to the `textDocument/definition` request.
 	 */
-	Definition *DefinitionClientCapabilities `json:"definition,omitempty"`
+	Definition *definitionClientCapabilities `json:"definition,omitempty"`
 
 	/**
 	 * Capabilities specific to the `textDocument/typeDefinition` request.
 	 *
 	 * @since 3.6.0
 	 */
-	TypeDefinition *TypeDefinitionClientCapabilities `json:"typeDefinition,omitempty"`
+	TypeDefinition *typeDefinitionClientCapabilities `json:"typeDefinition,omitempty"`
 
 	/**
 	 * Capabilities specific to the `textDocument/implementation` request.
 	 *
 	 * @since 3.6.0
 	 */
-	Implementation *ImplementationClientCapabilities `json:"implementation,omitempty"`
+	Implementation *implementationClientCapabilities `json:"implementation,omitempty"`
 
 	/**
 	 * Capabilities specific to the `textDocument/references` request.
 	 */
-	References *ReferenceClientCapabilities `json:"references,omitempty"`
+	References *referenceClientCapabilities `json:"references,omitempty"`
 
 	/**
 	 * Capabilities specific to the `textDocument/documentHighlight` request.
 	 */
-	DocumentHighlight *DocumentHighlightClientCapabilities `json:"documentHighlight,omitempty"`
+	DocumentHighlight *documentHighlightClientCapabilities `json:"documentHighlight,omitempty"`
 
 	/**
 	 * Capabilities specific to the `textDocument/documentSymbol` request.
 	 */
-	DocumentSymbol *DocumentSymbolClientCapabilities `json:"documentSymbol,omitempty"`
+	DocumentSymbol *documentSymbolClientCapabilities `json:"documentSymbol,omitempty"`
 
 	/**
 	 * Capabilities specific to the `textDocument/codeAction` request.
 	 */
-	CodeAction *CodeActionClientCapabilities `json:"codeAction,omitempty"`
+	CodeAction *codeActionClientCapabilities `json:"codeAction,omitempty"`
 
 	/**
 	 * Capabilities specific to the `textDocument/codeLens` request.
 	 */
-	CodeLens *CodeLensClientCapabilities `json:"codeLens,omitempty"`
+	CodeLens *codeLensClientCapabilities `json:"codeLens,omitempty"`
 
 	/**
 	 * Capabilities specific to the `textDocument/documentLink` request.
 	 */
-	DocumentLink *DocumentLinkClientCapabilities `json:"documentLink,omitempty"`
+	DocumentLink *documentLinkClientCapabilities `json:"documentLink,omitempty"`
 
 	/**
 	 * Capabilities specific to the `textDocument/documentColor` and the
@@ -738,119 +770,119 @@ type TextDocumentClientCapabilities struct {
 	 *
 	 * @since 3.6.0
 	 */
-	ColorProvider *DocumentColorClientCapabilities `json:"colorProvider,omitempty"`
+	ColorProvider *documentColorClientCapabilities `json:"colorProvider,omitempty"`
 
 	/**
 	 * Capabilities specific to the `textDocument/formatting` request.
 	 */
-	Formatting *DocumentFormattingClientCapabilities `json:"formatting,omitempty"`
+	Formatting *documentFormattingClientCapabilities `json:"formatting,omitempty"`
 
 	/**
 	 * Capabilities specific to the `textDocument/rangeFormatting` request.
 	 */
-	RangeFormatting *DocumentRangeFormattingClientCapabilities `json:"rangeFormatting,omitempty"`
+	RangeFormatting *documentRangeFormattingClientCapabilities `json:"rangeFormatting,omitempty"`
 
 	/** request.
 	 * Capabilities specific to the `textDocument/onTypeFormatting` request.
 	 */
-	OnTypeFormatting *DocumentOnTypeFormattingClientCapabilities `json:"onTypeFormatting,omitempty"`
+	OnTypeFormatting *documentOnTypeFormattingClientCapabilities `json:"onTypeFormatting,omitempty"`
 
 	/**
 	 * Capabilities specific to the `textDocument/rename` request.
 	 */
-	Rename *RenameClientCapabilities `json:"rename,omitempty"`
+	Rename *renameClientCapabilities `json:"rename,omitempty"`
 
 	/**
 	 * Capabilities specific to the `textDocument/publishDiagnostics`
 	 * notification.
 	 */
-	PublishDiagnostics *PublishDiagnosticsClientCapabilities `json:"publishDiagnostics,omitempty"`
+	PublishDiagnostics *publishDiagnosticsClientCapabilities `json:"publishDiagnostics,omitempty"`
 
 	/**
 	 * Capabilities specific to the `textDocument/foldingRange` request.
 	 *
 	 * @since 3.10.0
 	 */
-	FoldingRange *FoldingRangeClientCapabilities `json:"foldingRange,omitempty"`
+	FoldingRange *foldingRangeClientCapabilities `json:"foldingRange,omitempty"`
 
 	/**
 	 * Capabilities specific to the `textDocument/selectionRange` request.
 	 *
 	 * @since 3.15.0
 	 */
-	SelectionRange *SelectionRangeClientCapabilities `json:"selectionRange,omitempty"`
+	SelectionRange *selectionRangeClientCapabilities `json:"selectionRange,omitempty"`
 
 	/**
 	 * Capabilities specific to the `textDocument/linkedEditingRange` request.
 	 *
 	 * @since 3.16.0
 	 */
-	LinkedEditingRange *LinkedEditingRangeClientCapabilities `json:"linkedEditingRange,omitempty"`
+	LinkedEditingRange *linkedEditingRangeClientCapabilities `json:"linkedEditingRange,omitempty"`
 
 	/**
 	 * Capabilities specific to the various call hierarchy requests.
 	 *
 	 * @since 3.16.0
 	 */
-	CallHierarchy *CallHierarchyClientCapabilities `json:"callHierarchy,omitempty"`
+	CallHierarchy *callHierarchyClientCapabilities `json:"callHierarchy,omitempty"`
 
 	/**
 	 * Capabilities specific to the various semantic token requests.
 	 *
 	 * @since 3.16.0
 	 */
-	SemanticTokens *SemanticTokensClientCapabilities `json:"semanticTokens,omitempty"`
+	SemanticTokens *semanticTokensClientCapabilities `json:"semanticTokens,omitempty"`
 
 	/**
 	 * Capabilities specific to the `textDocument/moniker` request.
 	 *
 	 * @since 3.16.0
 	 */
-	Moniker *MonikerClientCapabilities `json:"moniker,omitempty"`
+	Moniker *monikerClientCapabilities `json:"moniker,omitempty"`
 
 	/**
 	 * Capabilities specific to the various type hierarchy requests.
 	 *
 	 * @since 3.17.0
 	 */
-	TypeHierarchy *TypeHierarchyClientCapabilities `json:"typeHierarchy,omitempty"`
+	TypeHierarchy *typeHierarchyClientCapabilities `json:"typeHierarchy,omitempty"`
 
 	/**
 	 * Capabilities specific to the `textDocument/inlineValue` request.
 	 *
 	 * @since 3.17.0
 	 */
-	InlineValue *InlineValueClientCapabilities `json:"inlineValue,omitempty"`
+	InlineValue *inlineValueClientCapabilities `json:"inlineValue,omitempty"`
 
 	/**
 	 * Capabilities specific to the `textDocument/inlayHint` request.
 	 *
 	 * @since 3.17.0
 	 */
-	InlayHint *InlayHintClientCapabilities `json:"inlayHint,omitempty"`
+	InlayHint *inlayHintClientCapabilities `json:"inlayHint,omitempty"`
 
 	/**
 	 * Capabilities specific to the diagnostic pull model.
 	 *
 	 * @since 3.17.0
 	 */
-	Diagnostic *DiagnosticClientCapabilities `json:"diagnostic,omitempty"`
+	Diagnostic *diagnosticClientCapabilities `json:"diagnostic,omitempty"`
 }
 
-// NotebookDocumentClientCapabilities Capabilities specific to the notebook document support.
+// notebookDocumentClientCapabilities Capabilities specific to the notebook document support.
 // since 3.17.0
-type NotebookDocumentClientCapabilities struct {
+type notebookDocumentClientCapabilities struct {
 	/**
 	 * Capabilities specific to notebook document synchronization
 	 *
 	 * @since 3.17.0
 	 */
-	Synchronization *NotebookDocumentSyncClientCapabilities `json:"synchronization,omitempty"`
+	Synchronization *notebookDocumentSyncClientCapabilities `json:"synchronization,omitempty"`
 }
 
-// NotebookDocumentSyncClientCapabilities Notebook specific client capabilities.
+// notebookDocumentSyncClientCapabilities Notebook specific client capabilities.
 // since 3.17.0
-type NotebookDocumentSyncClientCapabilities struct {
+type notebookDocumentSyncClientCapabilities struct {
 	/**
 	 * Whether implementation supports dynamic registration. If this is
 	 * set to `true` the client supports the new
@@ -865,8 +897,8 @@ type NotebookDocumentSyncClientCapabilities struct {
 	ExecutionSummarySupport *bool `json:"executionSummarySupport,omitempty"`
 }
 
-// ShowMessageRequestClientCapabilities Show message request client capabilities
-type ShowMessageRequestClientCapabilities struct {
+// showMessageRequestClientCapabilities Show message request client capabilities
+type showMessageRequestClientCapabilities struct {
 	/**
 	 * Capabilities specific to the `MessageActionItem` type.
 	 */
@@ -880,9 +912,9 @@ type ShowMessageRequestClientCapabilities struct {
 	} `json:"messageActionItem,omitempty"`
 }
 
-// ShowDocumentClientCapabilities Client capabilities for the show document request.
+// showDocumentClientCapabilities Client capabilities for the show document request.
 // since 3.16.0
-type ShowDocumentClientCapabilities struct {
+type showDocumentClientCapabilities struct {
 	/**
 	 * The client has support for the show document
 	 * request.
@@ -890,8 +922,8 @@ type ShowDocumentClientCapabilities struct {
 	Support *bool `json:"support,omitempty"`
 }
 
-// RegularExpressionsClientCapabilities Client capabilities specific to regular expressions.
-type RegularExpressionsClientCapabilities struct {
+// regularExpressionsClientCapabilities Client capabilities specific to regular expressions.
+type regularExpressionsClientCapabilities struct {
 	/**
 	 * The engine's name.
 	 */
@@ -903,9 +935,9 @@ type RegularExpressionsClientCapabilities struct {
 	Version *string `json:"Version,omitempty"`
 }
 
-// MarkdownClientCapabilities Client capabilities specific to the used markdown parser.
+// markdownClientCapabilities Client capabilities specific to the used markdown parser.
 // since 3.16.0
-type MarkdownClientCapabilities struct {
+type markdownClientCapabilities struct {
 	/**
 	 * The name of the parser.
 	 */
@@ -925,9 +957,9 @@ type MarkdownClientCapabilities struct {
 	AllowedTags []string `json:"allowedTags,omitempty"`
 }
 
-// PositionEncodingKind A type indicating how positions are encoded, specifically what column offsets mean.
+// positionEncodingKind A type indicating how positions are encoded, specifically what column offsets mean.
 // @since 3.17.0
-type PositionEncodingKind string
+type positionEncodingKind string
 
 // A set of predefined position encoding kinds.
 // since 3.17.0
@@ -955,14 +987,14 @@ const (
 	PositionEncodingKindUTF32 string = "utf-32"
 )
 
-// ResourceOperationKind The kind of resource operations supported by the client.
-type ResourceOperationKind string
+// resourceOperationKind The kind of resource operations supported by the client.
+type resourceOperationKind string
 
 const (
 	/**
 	 * Supports creating new files and folders.
 	 */
-	ResourceOperationKindCreate ResourceOperationKind = "create"
+	ResourceOperationKindCreate resourceOperationKind = "create"
 	/**
 	 * Supports renaming existing files and folders.
 	 */
@@ -973,7 +1005,7 @@ const (
 	ResourceOperationKindDelete = "delete"
 )
 
-type FailureHandlingKind string
+type failureHandlingKind string
 
 const (
 	/**
@@ -981,63 +1013,63 @@ const (
 	 * provided fails. All operations executed before the failing operation
 	 * stay executed.
 	 */
-	FailureHandlingKindAbort FailureHandlingKind = "abort"
+	FailureHandlingKindAbort failureHandlingKind = "abort"
 	/**
 	 * All operations are executed transactional. That means they either all
 	 * succeed or no changes at all are applied to the workspace.
 	 */
-	FailureHandlingKindTransactional FailureHandlingKind = "transactional"
+	FailureHandlingKindTransactional failureHandlingKind = "transactional"
 	/**
 	 * If the workspace edit contains only textual file changes they are
 	 * executed transactional. If resource changes (create, rename or delete
 	 * file) are part of the change the failure handling strategy is abort.
 	 */
-	FailureHandlingKindTextOnlyTransactional FailureHandlingKind = "textOnlyTransactional"
+	FailureHandlingKindTextOnlyTransactional failureHandlingKind = "textOnlyTransactional"
 	/**
 	 * The client tries to undo the operations already executed. But there is no
 	 * guarantee that this is succeeding.
 	 */
-	FailureHandlingKindUndo FailureHandlingKind = "undo"
+	FailureHandlingKindUndo failureHandlingKind = "undo"
 )
 
-type SymbolKind int
+type symbolKind int
 
 const (
-	SymbolKindFile          SymbolKind = 1
-	SymbolKindModule        SymbolKind = 2
-	SymbolKindNamespace     SymbolKind = 3
-	SymbolKindPackage       SymbolKind = 4
-	SymbolKindClass         SymbolKind = 5
-	SymbolKindMethod        SymbolKind = 6
-	SymbolKindProperty      SymbolKind = 7
-	SymbolKindField         SymbolKind = 8
-	SymbolKindConstructor   SymbolKind = 9
-	SymbolKindEnum          SymbolKind = 10
-	SymbolKindInterface     SymbolKind = 11
-	SymbolKindFunction      SymbolKind = 12
-	SymbolKindVariable      SymbolKind = 13
-	SymbolKindConstant      SymbolKind = 14
-	SymbolKindString        SymbolKind = 15
-	SymbolKindNumber        SymbolKind = 16
-	SymbolKindBoolean       SymbolKind = 17
-	SymbolKindArray         SymbolKind = 18
-	SymbolKindObject        SymbolKind = 19
-	SymbolKindKey           SymbolKind = 20
-	SymbolKindNull          SymbolKind = 21
-	SymbolKindEnumMember    SymbolKind = 22
-	SymbolKindStruct        SymbolKind = 23
-	SymbolKindEvent         SymbolKind = 24
-	SymbolKindOperator      SymbolKind = 25
-	SymbolKindTypeParameter SymbolKind = 26
+	SymbolKindFile          symbolKind = 1
+	SymbolKindModule        symbolKind = 2
+	SymbolKindNamespace     symbolKind = 3
+	SymbolKindPackage       symbolKind = 4
+	SymbolKindClass         symbolKind = 5
+	SymbolKindMethod        symbolKind = 6
+	SymbolKindProperty      symbolKind = 7
+	SymbolKindField         symbolKind = 8
+	SymbolKindConstructor   symbolKind = 9
+	SymbolKindEnum          symbolKind = 10
+	SymbolKindInterface     symbolKind = 11
+	SymbolKindFunction      symbolKind = 12
+	SymbolKindVariable      symbolKind = 13
+	SymbolKindConstant      symbolKind = 14
+	SymbolKindString        symbolKind = 15
+	SymbolKindNumber        symbolKind = 16
+	SymbolKindBoolean       symbolKind = 17
+	SymbolKindArray         symbolKind = 18
+	SymbolKindObject        symbolKind = 19
+	SymbolKindKey           symbolKind = 20
+	SymbolKindNull          symbolKind = 21
+	SymbolKindEnumMember    symbolKind = 22
+	SymbolKindStruct        symbolKind = 23
+	SymbolKindEvent         symbolKind = 24
+	SymbolKindOperator      symbolKind = 25
+	SymbolKindTypeParameter symbolKind = 26
 )
 
-type SymbolTag int
+type symbolTag int
 
 const (
-	SymbolTagDeprecated SymbolTag = 1
+	SymbolTagDeprecated symbolTag = 1
 )
 
-type TextDocumentSyncClientCapabilities struct {
+type textDocumentSyncClientCapabilities struct {
 	/**
 	 * Whether text document synchronization supports dynamic registration.
 	 */
@@ -1061,7 +1093,7 @@ type TextDocumentSyncClientCapabilities struct {
 	DidSave *bool `json:"didSave,omitempty"`
 }
 
-type CompletionClientCapabilities struct {
+type completionClientCapabilities struct {
 	/**
 	 * Whether completion supports dynamic registration.
 	 */
@@ -1091,7 +1123,7 @@ type CompletionClientCapabilities struct {
 		 * Client supports the follow content formats for the documentation
 		 * property. The order describes the preferred format of the client.
 		 */
-		DocumentationFormat []MarkupKind `json:"documentationFormat,omitempty"`
+		DocumentationFormat []markupKind `json:"documentationFormat,omitempty"`
 
 		/**
 		 * Client supports the deprecated property on a completion item.
@@ -1115,7 +1147,7 @@ type CompletionClientCapabilities struct {
 			/**
 			 * The tags supported by the client.
 			 */
-			ValueSet []CompletionItemTag `json:"valueSet,omitempty"`
+			ValueSet []completionItemTag `json:"valueSet,omitempty"`
 		} `json:"tagSupport,omitempty"`
 
 		/**
@@ -1148,7 +1180,7 @@ type CompletionClientCapabilities struct {
 		 * @since 3.16.0
 		 */
 		InsertTextModeSupport *struct {
-			ValueSet []InsertTextMode `json:"valueSet,omitempty"`
+			ValueSet []insertTextMode `json:"valueSet,omitempty"`
 		} `json:"insertTextModeSupport,omitempty"`
 
 		/**
@@ -1171,7 +1203,7 @@ type CompletionClientCapabilities struct {
 		 * the completion items kinds from `Text` to `Reference` as defined in
 		 * the initial version of the protocol.
 		 */
-		ValueSet []CompletionItemKind `json:"valueSet,omitempty"`
+		ValueSet []completionItemKind `json:"valueSet,omitempty"`
 	} `json:"completionItemKind,omitempty"`
 
 	/**
@@ -1186,7 +1218,7 @@ type CompletionClientCapabilities struct {
 	 *
 	 * @since 3.17.0
 	 */
-	InsertTextMode *InsertTextMode `json:"insertTextMode,omitempty"`
+	InsertTextMode *insertTextMode `json:"insertTextMode,omitempty"`
 
 	/**
 	 * The client supports the following `CompletionList` specific
@@ -1209,7 +1241,7 @@ type CompletionClientCapabilities struct {
 	} `json:"completionList,omitempty"`
 }
 
-type HoverClientCapabilities struct {
+type hoverClientCapabilities struct {
 	/**
 	 * Whether hover supports dynamic registration.
 	 */
@@ -1220,10 +1252,10 @@ type HoverClientCapabilities struct {
 	 * property refers to a `literal of type MarkupContent`.
 	 * The order describes the preferred format of the client.
 	 */
-	ContentFormat []MarkupKind `json:"contentFormat,omitempty"`
+	ContentFormat []markupKind `json:"contentFormat,omitempty"`
 }
 
-type SignatureHelpClientCapabilities struct {
+type signatureHelpClientCapabilities struct {
 	/**
 	 * Whether signature help supports dynamic registration.
 	 */
@@ -1238,7 +1270,7 @@ type SignatureHelpClientCapabilities struct {
 		 * Client supports the follow content formats for the documentation
 		 * property. The order describes the preferred format of the client.
 		 */
-		DocumentationFormat []MarkupKind `json:"documentationFormat,omitempty"`
+		DocumentationFormat []markupKind `json:"documentationFormat,omitempty"`
 
 		/**
 		 * Client capabilities specific to parameter information.
@@ -1273,7 +1305,7 @@ type SignatureHelpClientCapabilities struct {
 	ContextSupport *bool `json:"contextSupport,omitempty"`
 }
 
-type DeclarationClientCapabilities struct {
+type declarationClientCapabilities struct {
 	/**
 	 * Whether declaration supports dynamic registration. If this is set to
 	 * `true` the client supports the new `DeclarationRegistrationOptions`
@@ -1287,7 +1319,7 @@ type DeclarationClientCapabilities struct {
 	LinkSupport *bool `json:"linkSupport,omitempty"`
 }
 
-type DefinitionClientCapabilities struct {
+type definitionClientCapabilities struct {
 	/**
 	 * Whether definition supports dynamic registration.
 	 */
@@ -1301,7 +1333,7 @@ type DefinitionClientCapabilities struct {
 	LinkSupport *bool `json:"linkSupport,omitempty"`
 }
 
-type TypeDefinitionClientCapabilities struct {
+type typeDefinitionClientCapabilities struct {
 	/**
 	 * Whether implementation supports dynamic registration. If this is set to
 	 * `true` the client supports the new `TypeDefinitionRegistrationOptions`
@@ -1317,7 +1349,7 @@ type TypeDefinitionClientCapabilities struct {
 	LinkSupport *bool `json:"linkSupport,omitempty"`
 }
 
-type ImplementationClientCapabilities struct {
+type implementationClientCapabilities struct {
 	/**
 	 * Whether implementation supports dynamic registration. If this is set to
 	 * `true` the client supports the new `ImplementationRegistrationOptions`
@@ -1333,21 +1365,21 @@ type ImplementationClientCapabilities struct {
 	LinkSupport *bool `json:"linkSupport,omitempty"`
 }
 
-type ReferenceClientCapabilities struct {
+type referenceClientCapabilities struct {
 	/**
 	 * Whether references supports dynamic registration.
 	 */
 	DynamicRegistration *bool `json:"dynamicRegistration,omitempty"`
 }
 
-type DocumentHighlightClientCapabilities struct {
+type documentHighlightClientCapabilities struct {
 	/**
 	 * Whether document highlight supports dynamic registration.
 	 */
 	DynamicRegistration *bool `json:"dynamicRegistration,omitempty"`
 }
 
-type DocumentSymbolClientCapabilities struct {
+type documentSymbolClientCapabilities struct {
 	/**
 	 * Whether document symbol supports dynamic registration.
 	 */
@@ -1368,7 +1400,7 @@ type DocumentSymbolClientCapabilities struct {
 		 * the symbol kinds from `File` to `Array` as defined in
 		 * the initial version of the protocol.
 		 */
-		ValueSet []SymbolKind `json:"valueSet,omitempty"`
+		ValueSet []symbolKind `json:"valueSet,omitempty"`
 	} `json:"symbolKind,omitempty"`
 
 	/**
@@ -1387,7 +1419,7 @@ type DocumentSymbolClientCapabilities struct {
 		/**
 		 * The tags supported by the client.
 		 */
-		ValueSet []SymbolTag `json:"valueSet,omitempty"`
+		ValueSet []symbolTag `json:"valueSet,omitempty"`
 	} `json:"tagSupport,omitempty"`
 
 	/**
@@ -1399,7 +1431,7 @@ type DocumentSymbolClientCapabilities struct {
 	LabelSupport *bool `json:"labelSupport,omitempty"`
 }
 
-type CodeActionClientCapabilities struct {
+type codeActionClientCapabilities struct {
 	/**
 	 * Whether code action supports dynamic registration.
 	 */
@@ -1423,7 +1455,7 @@ type CodeActionClientCapabilities struct {
 			 * handle values outside its set gracefully and falls back
 			 * to a default value when unknown.
 			 */
-			ValueSet []CodeActionKind `json:"valueSet,omitempty"`
+			ValueSet []codeActionKind `json:"valueSet,omitempty"`
 		} `json:"codeActionKind"`
 	} `json:"codeActionLiteralSupport,omitempty"`
 
@@ -1475,14 +1507,14 @@ type CodeActionClientCapabilities struct {
 	HonorsChangeAnnotations *bool `json:"honorsChangeAnnotations,omitempty"`
 }
 
-type CodeLensClientCapabilities struct {
+type codeLensClientCapabilities struct {
 	/**
 	 * Whether code lens supports dynamic registration.
 	 */
 	DynamicRegistration *bool `json:"dynamicRegistration,omitempty"`
 }
 
-type DocumentLinkClientCapabilities struct {
+type documentLinkClientCapabilities struct {
 	/**
 	 * Whether document link supports dynamic registration.
 	 */
@@ -1496,35 +1528,35 @@ type DocumentLinkClientCapabilities struct {
 	TooltipSupport *bool `json:"tooltipSupport,omitempty"`
 }
 
-type DocumentColorClientCapabilities struct {
+type documentColorClientCapabilities struct {
 	/**
 	 * Whether document color supports dynamic registration.
 	 */
 	DynamicRegistration *bool `json:"dynamicRegistration,omitempty"`
 }
 
-type DocumentFormattingClientCapabilities struct {
+type documentFormattingClientCapabilities struct {
 	/**
 	 * Whether formatting supports dynamic registration.
 	 */
 	DynamicRegistration *bool `json:"dynamicRegistration,omitempty"`
 }
 
-type DocumentRangeFormattingClientCapabilities struct {
+type documentRangeFormattingClientCapabilities struct {
 	/**
 	 * Whether formatting supports dynamic registration.
 	 */
 	DynamicRegistration *bool `json:"dynamicRegistration,omitempty"`
 }
 
-type DocumentOnTypeFormattingClientCapabilities struct {
+type documentOnTypeFormattingClientCapabilities struct {
 	/**
 	 * Whether on type formatting supports dynamic registration.
 	 */
 	DynamicRegistration *bool `json:"dynamicRegistration,omitempty"`
 }
 
-type RenameClientCapabilities struct {
+type renameClientCapabilities struct {
 	/**
 	 * Whether rename supports dynamic registration.
 	 */
@@ -1547,7 +1579,7 @@ type RenameClientCapabilities struct {
 	 *
 	 * @since version 3.16.0
 	 */
-	PrepareSupportDefaultBehavior *PrepareSupportDefaultBehavior `json:"prepareSupportDefaultBehavior,omitempty"`
+	PrepareSupportDefaultBehavior *prepareSupportDefaultBehavior `json:"prepareSupportDefaultBehavior,omitempty"`
 
 	/**
 	 * Whether the client honors the change annotations in
@@ -1561,7 +1593,7 @@ type RenameClientCapabilities struct {
 	HonorsChangeAnnotations *bool `json:"honorsChangeAnnotations,omitempty"`
 }
 
-type PublishDiagnosticsClientCapabilities struct {
+type publishDiagnosticsClientCapabilities struct {
 	/**
 	 * Whether the clients accepts diagnostics with related information.
 	 */
@@ -1577,7 +1609,7 @@ type PublishDiagnosticsClientCapabilities struct {
 		/**
 		 * The tags supported by the client.
 		 */
-		ValueSet []DiagnosticTag `json:"valueSet,omitempty"`
+		ValueSet []diagnosticTag `json:"valueSet,omitempty"`
 	} `json:"tagSupport,omitempty"`
 
 	/**
@@ -1605,7 +1637,7 @@ type PublishDiagnosticsClientCapabilities struct {
 	DataSupport *bool `json:"dataSupport,omitempty"`
 }
 
-type FoldingRangeClientCapabilities struct {
+type foldingRangeClientCapabilities struct {
 	/**
 	 * Whether implementation supports dynamic registration for folding range
 	 * providers. If this is set to `true` the client supports the new
@@ -1640,7 +1672,7 @@ type FoldingRangeClientCapabilities struct {
 		 * handle values outside its set gracefully and falls back
 		 * to a default value when unknown.
 		 */
-		ValueSet []FoldingRangeKind `json:"valueSet,omitempty"`
+		ValueSet []foldingRangeKind `json:"valueSet,omitempty"`
 	} `json:"foldingRangeKind,omitempty"`
 
 	/**
@@ -1658,7 +1690,7 @@ type FoldingRangeClientCapabilities struct {
 	} `json:"foldingRange,omitempty"`
 }
 
-type SelectionRangeClientCapabilities struct {
+type selectionRangeClientCapabilities struct {
 	/**
 	 * Whether implementation supports dynamic registration for selection range
 	 * providers. If this is set to `true` the client supports the new
@@ -1668,7 +1700,7 @@ type SelectionRangeClientCapabilities struct {
 	DynamicRegistration *bool `json:"dynamicRegistration,omitempty"`
 }
 
-type LinkedEditingRangeClientCapabilities struct {
+type linkedEditingRangeClientCapabilities struct {
 	/**
 	 * Whether the implementation supports dynamic registration.
 	 * If this is set to `true` the client supports the new
@@ -1678,7 +1710,7 @@ type LinkedEditingRangeClientCapabilities struct {
 	DynamicRegistration *bool `json:"dynamicRegistration,omitempty"`
 }
 
-type CallHierarchyClientCapabilities struct {
+type callHierarchyClientCapabilities struct {
 	/**
 	 * Whether implementation supports dynamic registration. If this is set to
 	 * `true` the client supports the new `(TextDocumentRegistrationOptions &
@@ -1688,7 +1720,7 @@ type CallHierarchyClientCapabilities struct {
 	DynamicRegistration *bool `json:"dynamicRegistration,omitempty"`
 }
 
-type SemanticTokensClientCapabilities struct {
+type semanticTokensClientCapabilities struct {
 	/**
 	 * Whether implementation supports dynamic registration. If this is set to
 	 * `true` the client supports the new `(TextDocumentRegistrationOptions &
@@ -1735,7 +1767,7 @@ type SemanticTokensClientCapabilities struct {
 	/**
 	 * The formats the clients supports.
 	 */
-	Formats []TokenFormat `json:"formats,omitempty"`
+	Formats []tokenFormat `json:"formats,omitempty"`
 
 	/**
 	 * Whether the client supports tokens that can overlap each other.
@@ -1772,7 +1804,7 @@ type SemanticTokensClientCapabilities struct {
 	AugmentsSyntaxTokens *bool `json:"augmentsSyntaxTokens,omitempty"`
 }
 
-type MonikerClientCapabilities struct {
+type monikerClientCapabilities struct {
 	/**
 	 * Whether implementation supports dynamic registration. If this is set to
 	 * `true` the client supports the new `(TextDocumentRegistrationOptions &
@@ -1782,7 +1814,7 @@ type MonikerClientCapabilities struct {
 	DynamicRegistration *bool `json:"dynamicRegistration,omitempty"`
 }
 
-type TypeHierarchyClientCapabilities struct {
+type typeHierarchyClientCapabilities struct {
 	/**
 	 * Whether implementation supports dynamic registration. If this is set to
 	 * `true` the client supports the new `(TextDocumentRegistrationOptions &
@@ -1792,9 +1824,9 @@ type TypeHierarchyClientCapabilities struct {
 	DynamicRegistration *bool `json:"dynamicRegistration,omitempty"`
 }
 
-// InlineValueClientCapabilities Client capabilities specific to inline values.
+// inlineValueClientCapabilities Client capabilities specific to inline values.
 // since 3.17.0
-type InlineValueClientCapabilities struct {
+type inlineValueClientCapabilities struct {
 	/**
 	 * Whether implementation supports dynamic registration for inline
 	 * value providers.
@@ -1802,9 +1834,9 @@ type InlineValueClientCapabilities struct {
 	DynamicRegistration *bool `json:"dynamicRegistration,omitempty"`
 }
 
-// InlayHintClientCapabilities Inlay hint client capabilities.
+// inlayHintClientCapabilities Inlay hint client capabilities.
 // since 3.17.0
-type InlayHintClientCapabilities struct {
+type inlayHintClientCapabilities struct {
 	/**
 	 * Whether inlay hints support dynamic registration.
 	 */
@@ -1822,9 +1854,9 @@ type InlayHintClientCapabilities struct {
 	} `json:"resolveSupport,omitempty"`
 }
 
-// DiagnosticClientCapabilities Client capabilities specific to diagnostic pull requests.
+// diagnosticClientCapabilities Client capabilities specific to diagnostic pull requests.
 // since 3.17.0
-type DiagnosticClientCapabilities struct {
+type diagnosticClientCapabilities struct {
 	/**
 	 * Whether implementation supports dynamic registration. If this is set to
 	 * `true` the client supports the new
@@ -1863,68 +1895,68 @@ type DiagnosticClientCapabilities struct {
 	DataSupport *bool `json:"dataSupport,omitempty"`
 }
 
-type MarkupKind string
+type markupKind string
 
 const (
 	/**
 	 * Plain text is supported as a content format
 	 */
-	MarkupKindPlaintext MarkupKind = "plaintext"
+	MarkupKindPlaintext markupKind = "plaintext"
 	/**
 	 * Markdown is supported as a content format
 	 */
-	MarkupKindMarkdown MarkupKind = "markdown"
+	MarkupKindMarkdown markupKind = "markdown"
 )
 
-type CompletionItemTag = int
+type completionItemTag = int
 
 const (
-	CompletionItemTagDeprecated CompletionItemTag = 1
+	CompletionItemTagDeprecated completionItemTag = 1
 )
 
-type InsertTextMode = int
+type insertTextMode = int
 
 const (
-	InsertTextModeAsIs              InsertTextMode = 1
-	InsertTextModeAdjustIndentation InsertTextMode = 2
+	InsertTextModeAsIs              insertTextMode = 1
+	InsertTextModeAdjustIndentation insertTextMode = 2
 )
 
-type CompletionItemKind = int
+type completionItemKind = int
 
 const (
-	CompletionItemKindText          CompletionItemKind = 1
-	CompletionItemKindMethod        CompletionItemKind = 2
-	CompletionItemKindFunction      CompletionItemKind = 3
-	CompletionItemKindConstructor   CompletionItemKind = 4
-	CompletionItemKindField         CompletionItemKind = 5
-	CompletionItemKindVariable      CompletionItemKind = 6
-	CompletionItemKindClass         CompletionItemKind = 7
-	CompletionItemKindInterface     CompletionItemKind = 8
-	CompletionItemKindModule        CompletionItemKind = 9
-	CompletionItemKindProperty      CompletionItemKind = 10
-	CompletionItemKindUnit          CompletionItemKind = 11
-	CompletionItemKindValue         CompletionItemKind = 12
-	CompletionItemKindEnum          CompletionItemKind = 13
-	CompletionItemKindKeyword       CompletionItemKind = 14
-	CompletionItemKindSnippet       CompletionItemKind = 15
-	CompletionItemKindColor         CompletionItemKind = 16
-	CompletionItemKindFile          CompletionItemKind = 17
-	CompletionItemKindReference     CompletionItemKind = 18
-	CompletionItemKindFolder        CompletionItemKind = 19
-	CompletionItemKindEnumMember    CompletionItemKind = 20
-	CompletionItemKindConstant      CompletionItemKind = 21
-	CompletionItemKindStruct        CompletionItemKind = 22
-	CompletionItemKindEvent         CompletionItemKind = 23
-	CompletionItemKindOperator      CompletionItemKind = 24
-	CompletionItemKindTypeParameter CompletionItemKind = 25
+	CompletionItemKindText          completionItemKind = 1
+	CompletionItemKindMethod        completionItemKind = 2
+	CompletionItemKindFunction      completionItemKind = 3
+	CompletionItemKindConstructor   completionItemKind = 4
+	CompletionItemKindField         completionItemKind = 5
+	CompletionItemKindVariable      completionItemKind = 6
+	CompletionItemKindClass         completionItemKind = 7
+	CompletionItemKindInterface     completionItemKind = 8
+	CompletionItemKindModule        completionItemKind = 9
+	CompletionItemKindProperty      completionItemKind = 10
+	CompletionItemKindUnit          completionItemKind = 11
+	CompletionItemKindValue         completionItemKind = 12
+	CompletionItemKindEnum          completionItemKind = 13
+	CompletionItemKindKeyword       completionItemKind = 14
+	CompletionItemKindSnippet       completionItemKind = 15
+	CompletionItemKindColor         completionItemKind = 16
+	CompletionItemKindFile          completionItemKind = 17
+	CompletionItemKindReference     completionItemKind = 18
+	CompletionItemKindFolder        completionItemKind = 19
+	CompletionItemKindEnumMember    completionItemKind = 20
+	CompletionItemKindConstant      completionItemKind = 21
+	CompletionItemKindStruct        completionItemKind = 22
+	CompletionItemKindEvent         completionItemKind = 23
+	CompletionItemKindOperator      completionItemKind = 24
+	CompletionItemKindTypeParameter completionItemKind = 25
 )
 
-// CodeActionKind The kind of a code action.
+// codeActionKind The kind of a code action.
 // Kinds are a hierarchical list of identifiers separated by `.`,
 // e.g. `"refactor.extract.function"`.
 // The set of kinds is open and client needs to announce the kinds it supports
 // to the server during initialization.
-type CodeActionKind = string
+type codeActionKind = string
 
 /**
  * A set of predefined code action kinds.
@@ -1934,17 +1966,17 @@ const (
 	/**
 	 * Empty kind.
 	 */
-	CodeActionKindEmpty CodeActionKind = ""
+	CodeActionKindEmpty codeActionKind = ""
 
 	/**
 	 * Base kind for quickfix actions: "quickfix".
 	 */
-	CodeActionKindQuickFix CodeActionKind = "quickfix"
+	CodeActionKindQuickFix codeActionKind = "quickfix"
 
 	/**
 	 * Base kind for refactoring actions: "refactor".
 	 */
-	CodeActionKindRefactor CodeActionKind = "refactor"
+	CodeActionKindRefactor codeActionKind = "refactor"
 
 	/**
 	 * Base kind for refactoring extraction actions: "refactor.extract".
@@ -1957,7 +1989,7 @@ const (
 	 * - Extract interface from class
 	 * - ...
 	 */
-	CodeActionKindRefactorExtract CodeActionKind = "refactor.extract"
+	CodeActionKindRefactorExtract codeActionKind = "refactor.extract"
 
 	/**
 	 * Base kind for refactoring inline actions: "refactor.inline".
@@ -1969,7 +2001,7 @@ const (
 	 * - Inline constant
 	 * - ...
 	 */
-	CodeActionKindRefactorInline CodeActionKind = "refactor.inline"
+	CodeActionKindRefactorInline codeActionKind = "refactor.inline"
 
 	/**
 	 * Base kind for refactoring rewrite actions: "refactor.rewrite".
@@ -1983,20 +2015,20 @@ const (
 	 * - Move method to base class
 	 * - ...
 	 */
-	CodeActionKindRefactorRewrite CodeActionKind = "refactor.rewrite"
+	CodeActionKindRefactorRewrite codeActionKind = "refactor.rewrite"
 
 	/**
 	 * Base kind for source actions: `source`.
 	 *
 	 * Source code actions apply to the entire file.
 	 */
-	CodeActionKindSource CodeActionKind = "source"
+	CodeActionKindSource codeActionKind = "source"
 
 	/**
 	 * Base kind for an organize imports source action:
 	 * `source.organizeImports`.
 	 */
-	CodeActionKindSourceOrganizeImports CodeActionKind = "source.organizeImports"
+	CodeActionKindSourceOrganizeImports codeActionKind = "source.organizeImports"
 
 	/**
 	 * Base kind for a "fix all" source action: `source.fixAll`.
@@ -2007,18 +2039,18 @@ const (
 	 *
 	 * @since 3.17.0
 	 */
-	CodeActionKindSourceFixAll CodeActionKind = "source.fixAll"
+	CodeActionKindSourceFixAll codeActionKind = "source.fixAll"
 )
 
-type PrepareSupportDefaultBehavior = int
+type prepareSupportDefaultBehavior = int
 
 const (
-	PrepareSupportDefaultBehaviorIdentifier PrepareSupportDefaultBehavior = 1
+	PrepareSupportDefaultBehaviorIdentifier prepareSupportDefaultBehavior = 1
 )
 
-// DiagnosticTag The diagnostic tags.
+// diagnosticTag The diagnostic tags.
 // since 3.15.0
-type DiagnosticTag = int
+type diagnosticTag = int
 
 const (
 	/**
@@ -2027,17 +2059,17 @@ const (
 	 * Clients are allowed to render diagnostics with this tag faded out
 	 * instead of having an error squiggle.
 	 */
-	DiagnosticTagUnnecessary DiagnosticTag = 1
+	DiagnosticTagUnnecessary diagnosticTag = 1
 	/**
 	 * Deprecated or obsolete code.
 	 *
 	 * Clients are allowed to rendered diagnostics with this tag strike through.
 	 */
-	DiagnosticTagDeprecated DiagnosticTag = 2
+	DiagnosticTagDeprecated diagnosticTag = 2
 )
 
-// FoldingRangeKind The type is a string since the value set is extensible
-type FoldingRangeKind = string
+// foldingRangeKind The type is a string since the value set is extensible
+type foldingRangeKind = string
 
 /**
  * A set of predefined range kinds.
@@ -2057,8 +2089,118 @@ const (
 	FoldingRangeKindRegion string = "region"
 )
 
-type TokenFormat = string
+type tokenFormat = string
 
 const (
-	TokenFormatRelative TokenFormat = "relative"
+	TokenFormatRelative tokenFormat = "relative"
+)
+
+type responseError struct {
+	/**
+	 * A number indicating the error type that occurred.
+	 */
+	Code int `json:"code"`
+
+	/**
+	 * A string providing a short description of the error.
+	 */
+	Message string `json:"message"`
+
+	/**
+	 * A primitive or structured value that contains additional
+	 * information about the error. Can be omitted.
+	 */
+	Data lSPAny `json:"data,omitempty"`
+}
+
+const (
+	// Defined by JSON-RPC
+	ParseError     int = -32700
+	InvalidRequest int = -32600
+	MethodNotFound int = -32601
+	InvalidParams  int = -32602
+	InternalError  int = -32603
+
+	/**
+	 * This is the start range of JSON-RPC reserved error codes.
+	 * It doesn't denote a real error code. No LSP error codes should
+	 * be defined between the start and end range. For backwards
+	 * compatibility the `ServerNotInitialized` and the `UnknownErrorCode`
+	 * are left in the range.
+	 *
+	 * @since 3.16.0
+	 */
+	jsonrpcReservedErrorRangeStart int = -32099
+	/** @deprecated use jsonrpcReservedErrorRangeStart */
+	serverErrorStart int = jsonrpcReservedErrorRangeStart
+
+	/**
+	 * Error code indicating that a server received a notification or
+	 * request before the server received the `initialize` request.
+	 */
+	ServerNotInitialized int = -32002
+	UnknownErrorCode     int = -32001
+
+	/**
+	 * This is the end range of JSON-RPC reserved error codes.
+	 * It doesn't denote a real error code.
+	 *
+	 * @since 3.16.0
+	 */
+	jsonrpcReservedErrorRangeEnd = -32000
+	/** @deprecated use jsonrpcReservedErrorRangeEnd */
+	serverErrorEnd int = jsonrpcReservedErrorRangeEnd
+
+	/**
+	 * This is the start range of LSP reserved error codes.
+	 * It doesn't denote a real error code.
+	 *
+	 * @since 3.16.0
+	 */
+	lspReservedErrorRangeStart int = -32899
+
+	/**
+	 * A request failed but it was syntactically correct, e.g the
+	 * method name was known and the parameters were valid. The error
+	 * message should contain human readable information about why
+	 * the request failed.
+	 *
+	 * @since 3.17.0
+	 */
+	RequestFailed int = -32803
+
+	/**
+	 * The server cancelled the request. This error code should
+	 * only be used for requests that explicitly support being
+	 * server cancellable.
+	 *
+	 * @since 3.17.0
+	 */
+	ServerCancelled int = -32802
+
+	/**
+	 * The server detected that the content of a document got
+	 * modified outside normal conditions. A server should
+	 * NOT send this error code if it detects a content change
+	 * in its unprocessed messages. The result even computed
+	 * on an older state might still be useful for the client.
+	 *
+	 * If a client decides that a result is not of any use anymore
+	 * the client should cancel the request.
+	 */
+	ContentModified int = -32801
+
+	/**
+	 * The client has canceled a request and a server has detected
+	 * the cancel.
+	 */
+	RequestCancelled int = -32800
+
+	/**
+	 * This is the end range of LSP reserved error codes.
+	 * It doesn't denote a real error code.
+	 *
+	 * @since 3.16.0
+	 */
+	lspReservedErrorRangeEnd int = -32800
 )

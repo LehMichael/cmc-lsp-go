@@ -28,9 +28,7 @@ func (c *countingReader) Read(p []byte) (int, error) {
 	return n, err
 }
 
-func NewLsp() {
-	fmt.Println("Hello, World!")
-
+func NewLsp() int {
 	var hd header
 	headerDone := false
 
@@ -39,7 +37,6 @@ func NewLsp() {
 		n: 0,
 	}
 
-	contentStart := stdin.n
 	var content strings.Builder
 
 	scanner := bufio.NewScanner(&stdin)
@@ -51,39 +48,31 @@ func NewLsp() {
 			content.WriteString(s)
 			content.WriteString("\n")
 
-			if stdin.n-contentStart >= hd.contentLength {
-				fmt.Printf("got: %v expected: %v\n", stdin.n-contentStart, hd.contentLength)
-				fmt.Printf("aaaaa:\n\n%v\n\n\n", content.String())
-				var message RequestMessage
-				if err := json.Unmarshal([]byte(content.String()), &message); err != nil {
-					panic(err.Error())
+			if stdin.n >= hd.contentLength {
+				if r := handleMessage(content.String()); r >= 0 {
+					return r
 				}
-				if jm, err := json.MarshalIndent(message, "", "  "); err != nil {
-					panic(err.Error())
-				} else {
-					fmt.Printf("ffffff: \n%v\n", string(jm))
-				}
-
+				headerDone = false
+				content.Reset()
 			}
 		}
 
 		switch {
 		case strings.HasPrefix(s, "Content-Length:"):
 			numstring := strings.TrimSpace(string([]rune(s)[15:]))
-			// fmt.Printf("aaasdf: %v\n", numstring)
 			l, e := strconv.ParseInt(numstring, 10, 64)
 			if e != nil {
 				panic(e.Error())
 			}
 			hd.contentLength = l
-			// fmt.Printf("len: %v\n", l)
 		case strings.HasPrefix(s, "Content-Type:"):
 			ct := strings.TrimSpace(string([]rune(s)[13:]))
 			hd.contentType = &ct
 		case s == "":
 			headerDone = true
-			contentStart = stdin.n
-			fmt.Printf(
+			stdin.n = 0
+			fmt.Fprintf(
+				os.Stderr,
 				"header done!\nlength: %v\ntype: %v\n",
 				hd.contentLength,
 				hd.contentType,
@@ -93,6 +82,60 @@ func NewLsp() {
 	}
 
 	if err := scanner.Err(); err != nil {
-		fmt.Println("Error reading input:", err)
+		fmt.Fprintln(os.Stderr, "Error reading input:", err)
+	}
+
+	return 1
+}
+
+var isShutdown = false
+
+func handleMessage(msg string) int {
+	var message requestMessage
+	if err := json.Unmarshal([]byte(msg), &message); err != nil {
+		panic(err.Error())
+	}
+
+	// if jm, err := json.MarshalIndent(message, "", "  "); err != nil {
+	// 	panic(err.Error())
+	// } else {
+	// 	fmt.Fprintf(os.Stderr, "ffffff: \n%v\n", string(jm))
+	// }
+
+	if isShutdown && message.Method != "exit" {
+		respondEmpty(message.ID, &responseError{
+			Code: InvalidRequest,
+		})
+		return -1
+	}
+
+	switch message.Method {
+	case "shutdown":
+		isShutdown = true
+		respondEmpty(message.ID, nil)
+	case "exit":
+		if isShutdown {
+			return 0
+		}
+		return 1
+	}
+
+	return -1
+}
+
+func respondEmpty(id messageID, err *responseError) {
+	r := responseMessage{
+		message: message{
+			Jsonrpc: "2.0",
+		},
+		ID:     id,
+		Result: nil,
+		Error:  err,
+	}
+
+	if jm, err := json.MarshalIndent(r, "", "  "); err != nil {
+		panic(err.Error())
+	} else {
+		fmt.Println(string(jm))
 	}
 }
