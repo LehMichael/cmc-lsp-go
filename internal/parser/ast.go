@@ -96,6 +96,16 @@ type Call Expression
 
 func (Call) isStatementKind() {}
 
+//go:generate go tool enumer -type=SectionNamespaceKind -json
+type SectionNamespaceKind int
+
+const (
+	Unqualified SectionNamespaceKind = iota
+	Chandata
+	Ps
+	Nc
+)
+
 type SectionSwitch struct {
 	Kind             SectionSwitchKind
 	InvalidEndTokens []lexer.Token `json:",omitempty"`
@@ -107,14 +117,18 @@ type SectionSwitchKind interface {
 	isSectionSwitchKind()
 }
 
-type ChannelSection uint8
+type ChannelSection struct {
+	Channo    uint8
+	Namespace SectionNamespaceKind
+}
 
 func (ChannelSection) isSectionSwitchKind() {}
 
 type DriveSection struct {
-	Bus   uint8
-	Slave uint8
-	Do    uint8
+	Bus       uint8
+	Slave     uint8
+	Do        uint8
+	Namespace SectionNamespaceKind
 }
 
 func (DriveSection) isSectionSwitchKind() {}
@@ -130,7 +144,7 @@ type DeleteStatement struct {
 func (DeleteStatement) isStatementKind() {}
 
 type PreprocessorStatement struct {
-	kind            PreprocessorStatementKind
+	Kind            PreprocessorStatementKind
 	LeadingComments []string `json:",omitempty"`
 	TrailingComment *string  `json:",omitempty"`
 }
@@ -189,6 +203,7 @@ type ExpressionKind interface {
 type IdentifierExpression struct {
 	Segments []IdentifierSegment
 	Range    source.SourceRange
+	Section  *SectionSwitchKind
 }
 
 func (IdentifierExpression) isExpressionKind() {}

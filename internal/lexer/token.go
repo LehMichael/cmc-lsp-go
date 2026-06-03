@@ -18,6 +18,12 @@ const (
 	KeywordFunc
 	KeywordReturn
 
+	KeywordNamespaceNc
+	KeywordNamespacePs
+	KeywordNamespaceChan
+
+	Section
+
 	OperatorAssign
 	OperatorAssignIfBlank
 	OperatorAddAssign
@@ -69,8 +75,6 @@ const (
 	SymbolComma
 	SymbolDollar
 	SymbolDollarParen
-
-	Section
 
 	Comment
 

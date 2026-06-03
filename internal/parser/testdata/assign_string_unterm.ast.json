@@ -23,7 +23,8 @@
             "Line": 0,
             "Column": 1
           }
-        }
+        },
+        "Section": null
       },
       "Value": {
         "Type": "parser.StringLiteral",

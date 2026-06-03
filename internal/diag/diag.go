@@ -39,11 +39,15 @@ const (
 	IfElseEndMissing
 	CallStatementMalformed
 	InvaliStatement
+	FullyQualifiedIdentMissing
 
 	// lexer
 	SectionUnterminated
 	StringUnterminated
 	NumberFormatUnterminated
+
+	// analysis
+	MissingInclude
 )
 
 //go:generate go tool enumer -type=DiagnosticSeverity -json

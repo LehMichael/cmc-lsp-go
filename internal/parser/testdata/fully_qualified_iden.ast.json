@@ -1,0 +1,218 @@
+[
+  {
+    "Type": "parser.NewLine",
+    "Kind": {},
+    "Range": {
+      "Start": {
+        "Line": 0,
+        "Column": 0
+      },
+      "End": {
+        "Line": 0,
+        "Column": 1
+      }
+    }
+  },
+  {
+    "Type": "parser.Assignment",
+    "Kind": {
+      "Kind": "Assign",
+      "Target": {
+        "Segments": [
+          {
+            "Parts": [
+              {
+                "Type": "parser.LiteralIdentifier",
+                "Value": "Up"
+              }
+            ]
+          },
+          {
+            "Parts": [
+              {
+                "Type": "parser.LiteralIdentifier",
+                "Value": "test"
+              }
+            ]
+          }
+        ],
+        "Range": {
+          "Start": {
+            "Line": 1,
+            "Column": 0
+          },
+          "End": {
+            "Line": 1,
+            "Column": 7
+          }
+        },
+        "Section": null
+      },
+      "Value": {
+        "Type": "parser.IdentifierExpression",
+        "Kind": {
+          "Segments": [
+            {
+              "Parts": [
+                {
+                  "Type": "parser.LiteralIdentifier",
+                  "Value": "P105"
+                }
+              ]
+            }
+          ],
+          "Range": {
+            "Start": {
+              "Line": 1,
+              "Column": 24
+            },
+            "End": {
+              "Line": 1,
+              "Column": 28
+            }
+          },
+          "Section": {
+            "Bus": 3,
+            "Slave": 3,
+            "Do": 3,
+            "Namespace": "Ps"
+          }
+        },
+        "Range": {
+          "Start": {
+            "Line": 1,
+            "Column": 24
+          },
+          "End": {
+            "Line": 1,
+            "Column": 28
+          }
+        }
+      }
+    },
+    "Range": {
+      "Start": {
+        "Line": 1,
+        "Column": 0
+      },
+      "End": {
+        "Line": 1,
+        "Column": 28
+      }
+    }
+  },
+  {
+    "Type": "parser.NewLine",
+    "Kind": {},
+    "Range": {
+      "Start": {
+        "Line": 1,
+        "Column": 28
+      },
+      "End": {
+        "Line": 1,
+        "Column": 29
+      }
+    }
+  },
+  {
+    "Type": "parser.Assignment",
+    "Kind": {
+      "Kind": "Assign",
+      "Target": {
+        "Segments": [
+          {
+            "Parts": [
+              {
+                "Type": "parser.LiteralIdentifier",
+                "Value": "Up"
+              }
+            ]
+          },
+          {
+            "Parts": [
+              {
+                "Type": "parser.LiteralIdentifier",
+                "Value": "test2"
+              }
+            ]
+          }
+        ],
+        "Range": {
+          "Start": {
+            "Line": 2,
+            "Column": 0
+          },
+          "End": {
+            "Line": 2,
+            "Column": 8
+          }
+        },
+        "Section": null
+      },
+      "Value": {
+        "Type": "parser.IdentifierExpression",
+        "Kind": {
+          "Segments": [
+            {
+              "Parts": [
+                {
+                  "Type": "parser.LiteralIdentifier",
+                  "Value": "$MC_CHAN_NAME"
+                }
+              ]
+            }
+          ],
+          "Range": {
+            "Start": {
+              "Line": 2,
+              "Column": 18
+            },
+            "End": {
+              "Line": 2,
+              "Column": 31
+            }
+          },
+          "Section": {
+            "Channo": 1,
+            "Namespace": "Nc"
+          }
+        },
+        "Range": {
+          "Start": {
+            "Line": 2,
+            "Column": 18
+          },
+          "End": {
+            "Line": 2,
+            "Column": 31
+          }
+        }
+      }
+    },
+    "Range": {
+      "Start": {
+        "Line": 2,
+        "Column": 0
+      },
+      "End": {
+        "Line": 2,
+        "Column": 31
+      }
+    }
+  },
+  {
+    "Type": "parser.NewLine",
+    "Kind": {},
+    "Range": {
+      "Start": {
+        "Line": 2,
+        "Column": 31
+      },
+      "End": {
+        "Line": 2,
+        "Column": 32
+      }
+    }
+  }
+]

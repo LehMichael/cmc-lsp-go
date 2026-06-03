@@ -14,7 +14,7 @@
     "Severity": "Error"
   },
   {
-    "Kind": "FunctionInvalidOpeningBrace",
+    "Kind": "FunctionInvalidBeforeOpeningBrace",
     "Range": {
       "Start": {
         "Line": 1,

@@ -8,11 +8,11 @@ import (
 	"strings"
 )
 
-const _TokenKindName = "UnknownKeywordIfKeywordElseKeywordElseIfKeywordEndIfKeywordWhileKeywordEndWhileKeywordProcKeywordFuncKeywordReturnOperatorAssignOperatorAssignIfBlankOperatorAddAssignOperatorSubtractAssignOperatorMultiplyAssignOperatorDivideAssignOperatorOrAssignOperatorAndAssignOperatorDeleteOperatorEqualOperatorUnequalOperatorLessThanOperatorLessThanEqualOperatorGreaterThanOperatorGreaterThanEqualOperatorLogAndOperatorLogOrOperatorStringConcatOperatorAddOperatorSubtractOperatorMultiplyOperatorDivideOperatorAndOperatorOrOperatorNegateLiteralIdentifierLiteralStringLiteralNumberFormatLiteralNumberLiteralNumberExLiteralNullLiteralTrueLiteralFalseSymbolLeftParenSymbolRightParenSymbolLeftBracketSymbolRightBracketSymbolLeftBraceSymbolRightBraceSymbolDotSymbolCommaSymbolDollarSymbolDollarParenSectionCommentPreprocessorIncludePreprocessorUnknownEOFNewLine"
+const _TokenKindName = "UnknownKeywordIfKeywordElseKeywordElseIfKeywordEndIfKeywordWhileKeywordEndWhileKeywordProcKeywordFuncKeywordReturnKeywordNamespaceNcKeywordNamespacePsKeywordNamespaceChanSectionOperatorAssignOperatorAssignIfBlankOperatorAddAssignOperatorSubtractAssignOperatorMultiplyAssignOperatorDivideAssignOperatorOrAssignOperatorAndAssignOperatorDeleteOperatorEqualOperatorUnequalOperatorLessThanOperatorLessThanEqualOperatorGreaterThanOperatorGreaterThanEqualOperatorLogAndOperatorLogOrOperatorStringConcatOperatorAddOperatorSubtractOperatorMultiplyOperatorDivideOperatorAndOperatorOrOperatorNegateLiteralIdentifierLiteralStringLiteralNumberFormatLiteralNumberLiteralNumberExLiteralNullLiteralTrueLiteralFalseSymbolLeftParenSymbolRightParenSymbolLeftBracketSymbolRightBracketSymbolLeftBraceSymbolRightBraceSymbolDotSymbolCommaSymbolDollarSymbolDollarParenCommentPreprocessorIncludePreprocessorUnknownEOFNewLine"
 
-var _TokenKindIndex = [...]uint16{0, 7, 16, 27, 40, 52, 64, 79, 90, 101, 114, 128, 149, 166, 188, 210, 230, 246, 263, 277, 290, 305, 321, 342, 361, 385, 399, 412, 432, 443, 459, 475, 489, 500, 510, 524, 541, 554, 573, 586, 601, 612, 623, 635, 650, 666, 683, 701, 716, 732, 741, 752, 764, 781, 788, 795, 814, 833, 836, 843}
+var _TokenKindIndex = [...]uint16{0, 7, 16, 27, 40, 52, 64, 79, 90, 101, 114, 132, 150, 170, 177, 191, 212, 229, 251, 273, 293, 309, 326, 340, 353, 368, 384, 405, 424, 448, 462, 475, 495, 506, 522, 538, 552, 563, 573, 587, 604, 617, 636, 649, 664, 675, 686, 698, 713, 729, 746, 764, 779, 795, 804, 815, 827, 844, 851, 870, 889, 892, 899}
 
-const _TokenKindLowerName = "unknownkeywordifkeywordelsekeywordelseifkeywordendifkeywordwhilekeywordendwhilekeywordprockeywordfunckeywordreturnoperatorassignoperatorassignifblankoperatoraddassignoperatorsubtractassignoperatormultiplyassignoperatordivideassignoperatororassignoperatorandassignoperatordeleteoperatorequaloperatorunequaloperatorlessthanoperatorlessthanequaloperatorgreaterthanoperatorgreaterthanequaloperatorlogandoperatorlogoroperatorstringconcatoperatoraddoperatorsubtractoperatormultiplyoperatordivideoperatorandoperatororoperatornegateliteralidentifierliteralstringliteralnumberformatliteralnumberliteralnumberexliteralnullliteraltrueliteralfalsesymbolleftparensymbolrightparensymbolleftbracketsymbolrightbracketsymbolleftbracesymbolrightbracesymboldotsymbolcommasymboldollarsymboldollarparensectioncommentpreprocessorincludepreprocessorunknowneofnewline"
+const _TokenKindLowerName = "unknownkeywordifkeywordelsekeywordelseifkeywordendifkeywordwhilekeywordendwhilekeywordprockeywordfunckeywordreturnkeywordnamespacenckeywordnamespacepskeywordnamespacechansectionoperatorassignoperatorassignifblankoperatoraddassignoperatorsubtractassignoperatormultiplyassignoperatordivideassignoperatororassignoperatorandassignoperatordeleteoperatorequaloperatorunequaloperatorlessthanoperatorlessthanequaloperatorgreaterthanoperatorgreaterthanequaloperatorlogandoperatorlogoroperatorstringconcatoperatoraddoperatorsubtractoperatormultiplyoperatordivideoperatorandoperatororoperatornegateliteralidentifierliteralstringliteralnumberformatliteralnumberliteralnumberexliteralnullliteraltrueliteralfalsesymbolleftparensymbolrightparensymbolleftbracketsymbolrightbracketsymbolleftbracesymbolrightbracesymboldotsymbolcommasymboldollarsymboldollarparencommentpreprocessorincludepreprocessorunknowneofnewline"
 
 func (i TokenKind) String() string {
 	if i < 0 || i >= TokenKind(len(_TokenKindIndex)-1) {
@@ -35,58 +35,61 @@ func _TokenKindNoOp() {
 	_ = x[KeywordProc-(7)]
 	_ = x[KeywordFunc-(8)]
 	_ = x[KeywordReturn-(9)]
-	_ = x[OperatorAssign-(10)]
-	_ = x[OperatorAssignIfBlank-(11)]
-	_ = x[OperatorAddAssign-(12)]
-	_ = x[OperatorSubtractAssign-(13)]
-	_ = x[OperatorMultiplyAssign-(14)]
-	_ = x[OperatorDivideAssign-(15)]
-	_ = x[OperatorOrAssign-(16)]
-	_ = x[OperatorAndAssign-(17)]
-	_ = x[OperatorDelete-(18)]
-	_ = x[OperatorEqual-(19)]
-	_ = x[OperatorUnequal-(20)]
-	_ = x[OperatorLessThan-(21)]
-	_ = x[OperatorLessThanEqual-(22)]
-	_ = x[OperatorGreaterThan-(23)]
-	_ = x[OperatorGreaterThanEqual-(24)]
-	_ = x[OperatorLogAnd-(25)]
-	_ = x[OperatorLogOr-(26)]
-	_ = x[OperatorStringConcat-(27)]
-	_ = x[OperatorAdd-(28)]
-	_ = x[OperatorSubtract-(29)]
-	_ = x[OperatorMultiply-(30)]
-	_ = x[OperatorDivide-(31)]
-	_ = x[OperatorAnd-(32)]
-	_ = x[OperatorOr-(33)]
-	_ = x[OperatorNegate-(34)]
-	_ = x[LiteralIdentifier-(35)]
-	_ = x[LiteralString-(36)]
-	_ = x[LiteralNumberFormat-(37)]
-	_ = x[LiteralNumber-(38)]
-	_ = x[LiteralNumberEx-(39)]
-	_ = x[LiteralNull-(40)]
-	_ = x[LiteralTrue-(41)]
-	_ = x[LiteralFalse-(42)]
-	_ = x[SymbolLeftParen-(43)]
-	_ = x[SymbolRightParen-(44)]
-	_ = x[SymbolLeftBracket-(45)]
-	_ = x[SymbolRightBracket-(46)]
-	_ = x[SymbolLeftBrace-(47)]
-	_ = x[SymbolRightBrace-(48)]
-	_ = x[SymbolDot-(49)]
-	_ = x[SymbolComma-(50)]
-	_ = x[SymbolDollar-(51)]
-	_ = x[SymbolDollarParen-(52)]
-	_ = x[Section-(53)]
-	_ = x[Comment-(54)]
-	_ = x[PreprocessorInclude-(55)]
-	_ = x[PreprocessorUnknown-(56)]
-	_ = x[EOF-(57)]
-	_ = x[NewLine-(58)]
+	_ = x[KeywordNamespaceNc-(10)]
+	_ = x[KeywordNamespacePs-(11)]
+	_ = x[KeywordNamespaceChan-(12)]
+	_ = x[Section-(13)]
+	_ = x[OperatorAssign-(14)]
+	_ = x[OperatorAssignIfBlank-(15)]
+	_ = x[OperatorAddAssign-(16)]
+	_ = x[OperatorSubtractAssign-(17)]
+	_ = x[OperatorMultiplyAssign-(18)]
+	_ = x[OperatorDivideAssign-(19)]
+	_ = x[OperatorOrAssign-(20)]
+	_ = x[OperatorAndAssign-(21)]
+	_ = x[OperatorDelete-(22)]
+	_ = x[OperatorEqual-(23)]
+	_ = x[OperatorUnequal-(24)]
+	_ = x[OperatorLessThan-(25)]
+	_ = x[OperatorLessThanEqual-(26)]
+	_ = x[OperatorGreaterThan-(27)]
+	_ = x[OperatorGreaterThanEqual-(28)]
+	_ = x[OperatorLogAnd-(29)]
+	_ = x[OperatorLogOr-(30)]
+	_ = x[OperatorStringConcat-(31)]
+	_ = x[OperatorAdd-(32)]
+	_ = x[OperatorSubtract-(33)]
+	_ = x[OperatorMultiply-(34)]
+	_ = x[OperatorDivide-(35)]
+	_ = x[OperatorAnd-(36)]
+	_ = x[OperatorOr-(37)]
+	_ = x[OperatorNegate-(38)]
+	_ = x[LiteralIdentifier-(39)]
+	_ = x[LiteralString-(40)]
+	_ = x[LiteralNumberFormat-(41)]
+	_ = x[LiteralNumber-(42)]
+	_ = x[LiteralNumberEx-(43)]
+	_ = x[LiteralNull-(44)]
+	_ = x[LiteralTrue-(45)]
+	_ = x[LiteralFalse-(46)]
+	_ = x[SymbolLeftParen-(47)]
+	_ = x[SymbolRightParen-(48)]
+	_ = x[SymbolLeftBracket-(49)]
+	_ = x[SymbolRightBracket-(50)]
+	_ = x[SymbolLeftBrace-(51)]
+	_ = x[SymbolRightBrace-(52)]
+	_ = x[SymbolDot-(53)]
+	_ = x[SymbolComma-(54)]
+	_ = x[SymbolDollar-(55)]
+	_ = x[SymbolDollarParen-(56)]
+	_ = x[Comment-(57)]
+	_ = x[PreprocessorInclude-(58)]
+	_ = x[PreprocessorUnknown-(59)]
+	_ = x[EOF-(60)]
+	_ = x[NewLine-(61)]
 }
 
-var _TokenKindValues = []TokenKind{Unknown, KeywordIf, KeywordElse, KeywordElseIf, KeywordEndIf, KeywordWhile, KeywordEndWhile, KeywordProc, KeywordFunc, KeywordReturn, OperatorAssign, OperatorAssignIfBlank, OperatorAddAssign, OperatorSubtractAssign, OperatorMultiplyAssign, OperatorDivideAssign, OperatorOrAssign, OperatorAndAssign, OperatorDelete, OperatorEqual, OperatorUnequal, OperatorLessThan, OperatorLessThanEqual, OperatorGreaterThan, OperatorGreaterThanEqual, OperatorLogAnd, OperatorLogOr, OperatorStringConcat, OperatorAdd, OperatorSubtract, OperatorMultiply, OperatorDivide, OperatorAnd, OperatorOr, OperatorNegate, LiteralIdentifier, LiteralString, LiteralNumberFormat, LiteralNumber, LiteralNumberEx, LiteralNull, LiteralTrue, LiteralFalse, SymbolLeftParen, SymbolRightParen, SymbolLeftBracket, SymbolRightBracket, SymbolLeftBrace, SymbolRightBrace, SymbolDot, SymbolComma, SymbolDollar, SymbolDollarParen, Section, Comment, PreprocessorInclude, PreprocessorUnknown, EOF, NewLine}
+var _TokenKindValues = []TokenKind{Unknown, KeywordIf, KeywordElse, KeywordElseIf, KeywordEndIf, KeywordWhile, KeywordEndWhile, KeywordProc, KeywordFunc, KeywordReturn, KeywordNamespaceNc, KeywordNamespacePs, KeywordNamespaceChan, Section, OperatorAssign, OperatorAssignIfBlank, OperatorAddAssign, OperatorSubtractAssign, OperatorMultiplyAssign, OperatorDivideAssign, OperatorOrAssign, OperatorAndAssign, OperatorDelete, OperatorEqual, OperatorUnequal, OperatorLessThan, OperatorLessThanEqual, OperatorGreaterThan, OperatorGreaterThanEqual, OperatorLogAnd, OperatorLogOr, OperatorStringConcat, OperatorAdd, OperatorSubtract, OperatorMultiply, OperatorDivide, OperatorAnd, OperatorOr, OperatorNegate, LiteralIdentifier, LiteralString, LiteralNumberFormat, LiteralNumber, LiteralNumberEx, LiteralNull, LiteralTrue, LiteralFalse, SymbolLeftParen, SymbolRightParen, SymbolLeftBracket, SymbolRightBracket, SymbolLeftBrace, SymbolRightBrace, SymbolDot, SymbolComma, SymbolDollar, SymbolDollarParen, Comment, PreprocessorInclude, PreprocessorUnknown, EOF, NewLine}
 
 var _TokenKindNameToValueMap = map[string]TokenKind{
 	_TokenKindName[0:7]:          Unknown,
@@ -109,104 +112,110 @@ var _TokenKindNameToValueMap = map[string]TokenKind{
 	_TokenKindLowerName[90:101]:  KeywordFunc,
 	_TokenKindName[101:114]:      KeywordReturn,
 	_TokenKindLowerName[101:114]: KeywordReturn,
-	_TokenKindName[114:128]:      OperatorAssign,
-	_TokenKindLowerName[114:128]: OperatorAssign,
-	_TokenKindName[128:149]:      OperatorAssignIfBlank,
-	_TokenKindLowerName[128:149]: OperatorAssignIfBlank,
-	_TokenKindName[149:166]:      OperatorAddAssign,
-	_TokenKindLowerName[149:166]: OperatorAddAssign,
-	_TokenKindName[166:188]:      OperatorSubtractAssign,
-	_TokenKindLowerName[166:188]: OperatorSubtractAssign,
-	_TokenKindName[188:210]:      OperatorMultiplyAssign,
-	_TokenKindLowerName[188:210]: OperatorMultiplyAssign,
-	_TokenKindName[210:230]:      OperatorDivideAssign,
-	_TokenKindLowerName[210:230]: OperatorDivideAssign,
-	_TokenKindName[230:246]:      OperatorOrAssign,
-	_TokenKindLowerName[230:246]: OperatorOrAssign,
-	_TokenKindName[246:263]:      OperatorAndAssign,
-	_TokenKindLowerName[246:263]: OperatorAndAssign,
-	_TokenKindName[263:277]:      OperatorDelete,
-	_TokenKindLowerName[263:277]: OperatorDelete,
-	_TokenKindName[277:290]:      OperatorEqual,
-	_TokenKindLowerName[277:290]: OperatorEqual,
-	_TokenKindName[290:305]:      OperatorUnequal,
-	_TokenKindLowerName[290:305]: OperatorUnequal,
-	_TokenKindName[305:321]:      OperatorLessThan,
-	_TokenKindLowerName[305:321]: OperatorLessThan,
-	_TokenKindName[321:342]:      OperatorLessThanEqual,
-	_TokenKindLowerName[321:342]: OperatorLessThanEqual,
-	_TokenKindName[342:361]:      OperatorGreaterThan,
-	_TokenKindLowerName[342:361]: OperatorGreaterThan,
-	_TokenKindName[361:385]:      OperatorGreaterThanEqual,
-	_TokenKindLowerName[361:385]: OperatorGreaterThanEqual,
-	_TokenKindName[385:399]:      OperatorLogAnd,
-	_TokenKindLowerName[385:399]: OperatorLogAnd,
-	_TokenKindName[399:412]:      OperatorLogOr,
-	_TokenKindLowerName[399:412]: OperatorLogOr,
-	_TokenKindName[412:432]:      OperatorStringConcat,
-	_TokenKindLowerName[412:432]: OperatorStringConcat,
-	_TokenKindName[432:443]:      OperatorAdd,
-	_TokenKindLowerName[432:443]: OperatorAdd,
-	_TokenKindName[443:459]:      OperatorSubtract,
-	_TokenKindLowerName[443:459]: OperatorSubtract,
-	_TokenKindName[459:475]:      OperatorMultiply,
-	_TokenKindLowerName[459:475]: OperatorMultiply,
-	_TokenKindName[475:489]:      OperatorDivide,
-	_TokenKindLowerName[475:489]: OperatorDivide,
-	_TokenKindName[489:500]:      OperatorAnd,
-	_TokenKindLowerName[489:500]: OperatorAnd,
-	_TokenKindName[500:510]:      OperatorOr,
-	_TokenKindLowerName[500:510]: OperatorOr,
-	_TokenKindName[510:524]:      OperatorNegate,
-	_TokenKindLowerName[510:524]: OperatorNegate,
-	_TokenKindName[524:541]:      LiteralIdentifier,
-	_TokenKindLowerName[524:541]: LiteralIdentifier,
-	_TokenKindName[541:554]:      LiteralString,
-	_TokenKindLowerName[541:554]: LiteralString,
-	_TokenKindName[554:573]:      LiteralNumberFormat,
-	_TokenKindLowerName[554:573]: LiteralNumberFormat,
-	_TokenKindName[573:586]:      LiteralNumber,
-	_TokenKindLowerName[573:586]: LiteralNumber,
-	_TokenKindName[586:601]:      LiteralNumberEx,
-	_TokenKindLowerName[586:601]: LiteralNumberEx,
-	_TokenKindName[601:612]:      LiteralNull,
-	_TokenKindLowerName[601:612]: LiteralNull,
-	_TokenKindName[612:623]:      LiteralTrue,
-	_TokenKindLowerName[612:623]: LiteralTrue,
-	_TokenKindName[623:635]:      LiteralFalse,
-	_TokenKindLowerName[623:635]: LiteralFalse,
-	_TokenKindName[635:650]:      SymbolLeftParen,
-	_TokenKindLowerName[635:650]: SymbolLeftParen,
-	_TokenKindName[650:666]:      SymbolRightParen,
-	_TokenKindLowerName[650:666]: SymbolRightParen,
-	_TokenKindName[666:683]:      SymbolLeftBracket,
-	_TokenKindLowerName[666:683]: SymbolLeftBracket,
-	_TokenKindName[683:701]:      SymbolRightBracket,
-	_TokenKindLowerName[683:701]: SymbolRightBracket,
-	_TokenKindName[701:716]:      SymbolLeftBrace,
-	_TokenKindLowerName[701:716]: SymbolLeftBrace,
-	_TokenKindName[716:732]:      SymbolRightBrace,
-	_TokenKindLowerName[716:732]: SymbolRightBrace,
-	_TokenKindName[732:741]:      SymbolDot,
-	_TokenKindLowerName[732:741]: SymbolDot,
-	_TokenKindName[741:752]:      SymbolComma,
-	_TokenKindLowerName[741:752]: SymbolComma,
-	_TokenKindName[752:764]:      SymbolDollar,
-	_TokenKindLowerName[752:764]: SymbolDollar,
-	_TokenKindName[764:781]:      SymbolDollarParen,
-	_TokenKindLowerName[764:781]: SymbolDollarParen,
-	_TokenKindName[781:788]:      Section,
-	_TokenKindLowerName[781:788]: Section,
-	_TokenKindName[788:795]:      Comment,
-	_TokenKindLowerName[788:795]: Comment,
-	_TokenKindName[795:814]:      PreprocessorInclude,
-	_TokenKindLowerName[795:814]: PreprocessorInclude,
-	_TokenKindName[814:833]:      PreprocessorUnknown,
-	_TokenKindLowerName[814:833]: PreprocessorUnknown,
-	_TokenKindName[833:836]:      EOF,
-	_TokenKindLowerName[833:836]: EOF,
-	_TokenKindName[836:843]:      NewLine,
-	_TokenKindLowerName[836:843]: NewLine,
+	_TokenKindName[114:132]:      KeywordNamespaceNc,
+	_TokenKindLowerName[114:132]: KeywordNamespaceNc,
+	_TokenKindName[132:150]:      KeywordNamespacePs,
+	_TokenKindLowerName[132:150]: KeywordNamespacePs,
+	_TokenKindName[150:170]:      KeywordNamespaceChan,
+	_TokenKindLowerName[150:170]: KeywordNamespaceChan,
+	_TokenKindName[170:177]:      Section,
+	_TokenKindLowerName[170:177]: Section,
+	_TokenKindName[177:191]:      OperatorAssign,
+	_TokenKindLowerName[177:191]: OperatorAssign,
+	_TokenKindName[191:212]:      OperatorAssignIfBlank,
+	_TokenKindLowerName[191:212]: OperatorAssignIfBlank,
+	_TokenKindName[212:229]:      OperatorAddAssign,
+	_TokenKindLowerName[212:229]: OperatorAddAssign,
+	_TokenKindName[229:251]:      OperatorSubtractAssign,
+	_TokenKindLowerName[229:251]: OperatorSubtractAssign,
+	_TokenKindName[251:273]:      OperatorMultiplyAssign,
+	_TokenKindLowerName[251:273]: OperatorMultiplyAssign,
+	_TokenKindName[273:293]:      OperatorDivideAssign,
+	_TokenKindLowerName[273:293]: OperatorDivideAssign,
+	_TokenKindName[293:309]:      OperatorOrAssign,
+	_TokenKindLowerName[293:309]: OperatorOrAssign,
+	_TokenKindName[309:326]:      OperatorAndAssign,
+	_TokenKindLowerName[309:326]: OperatorAndAssign,
+	_TokenKindName[326:340]:      OperatorDelete,
+	_TokenKindLowerName[326:340]: OperatorDelete,
+	_TokenKindName[340:353]:      OperatorEqual,
+	_TokenKindLowerName[340:353]: OperatorEqual,
+	_TokenKindName[353:368]:      OperatorUnequal,
+	_TokenKindLowerName[353:368]: OperatorUnequal,
+	_TokenKindName[368:384]:      OperatorLessThan,
+	_TokenKindLowerName[368:384]: OperatorLessThan,
+	_TokenKindName[384:405]:      OperatorLessThanEqual,
+	_TokenKindLowerName[384:405]: OperatorLessThanEqual,
+	_TokenKindName[405:424]:      OperatorGreaterThan,
+	_TokenKindLowerName[405:424]: OperatorGreaterThan,
+	_TokenKindName[424:448]:      OperatorGreaterThanEqual,
+	_TokenKindLowerName[424:448]: OperatorGreaterThanEqual,
+	_TokenKindName[448:462]:      OperatorLogAnd,
+	_TokenKindLowerName[448:462]: OperatorLogAnd,
+	_TokenKindName[462:475]:      OperatorLogOr,
+	_TokenKindLowerName[462:475]: OperatorLogOr,
+	_TokenKindName[475:495]:      OperatorStringConcat,
+	_TokenKindLowerName[475:495]: OperatorStringConcat,
+	_TokenKindName[495:506]:      OperatorAdd,
+	_TokenKindLowerName[495:506]: OperatorAdd,
+	_TokenKindName[506:522]:      OperatorSubtract,
+	_TokenKindLowerName[506:522]: OperatorSubtract,
+	_TokenKindName[522:538]:      OperatorMultiply,
+	_TokenKindLowerName[522:538]: OperatorMultiply,
+	_TokenKindName[538:552]:      OperatorDivide,
+	_TokenKindLowerName[538:552]: OperatorDivide,
+	_TokenKindName[552:563]:      OperatorAnd,
+	_TokenKindLowerName[552:563]: OperatorAnd,
+	_TokenKindName[563:573]:      OperatorOr,
+	_TokenKindLowerName[563:573]: OperatorOr,
+	_TokenKindName[573:587]:      OperatorNegate,
+	_TokenKindLowerName[573:587]: OperatorNegate,
+	_TokenKindName[587:604]:      LiteralIdentifier,
+	_TokenKindLowerName[587:604]: LiteralIdentifier,
+	_TokenKindName[604:617]:      LiteralString,
+	_TokenKindLowerName[604:617]: LiteralString,
+	_TokenKindName[617:636]:      LiteralNumberFormat,
+	_TokenKindLowerName[617:636]: LiteralNumberFormat,
+	_TokenKindName[636:649]:      LiteralNumber,
+	_TokenKindLowerName[636:649]: LiteralNumber,
+	_TokenKindName[649:664]:      LiteralNumberEx,
+	_TokenKindLowerName[649:664]: LiteralNumberEx,
+	_TokenKindName[664:675]:      LiteralNull,
+	_TokenKindLowerName[664:675]: LiteralNull,
+	_TokenKindName[675:686]:      LiteralTrue,
+	_TokenKindLowerName[675:686]: LiteralTrue,
+	_TokenKindName[686:698]:      LiteralFalse,
+	_TokenKindLowerName[686:698]: LiteralFalse,
+	_TokenKindName[698:713]:      SymbolLeftParen,
+	_TokenKindLowerName[698:713]: SymbolLeftParen,
+	_TokenKindName[713:729]:      SymbolRightParen,
+	_TokenKindLowerName[713:729]: SymbolRightParen,
+	_TokenKindName[729:746]:      SymbolLeftBracket,
+	_TokenKindLowerName[729:746]: SymbolLeftBracket,
+	_TokenKindName[746:764]:      SymbolRightBracket,
+	_TokenKindLowerName[746:764]: SymbolRightBracket,
+	_TokenKindName[764:779]:      SymbolLeftBrace,
+	_TokenKindLowerName[764:779]: SymbolLeftBrace,
+	_TokenKindName[779:795]:      SymbolRightBrace,
+	_TokenKindLowerName[779:795]: SymbolRightBrace,
+	_TokenKindName[795:804]:      SymbolDot,
+	_TokenKindLowerName[795:804]: SymbolDot,
+	_TokenKindName[804:815]:      SymbolComma,
+	_TokenKindLowerName[804:815]: SymbolComma,
+	_TokenKindName[815:827]:      SymbolDollar,
+	_TokenKindLowerName[815:827]: SymbolDollar,
+	_TokenKindName[827:844]:      SymbolDollarParen,
+	_TokenKindLowerName[827:844]: SymbolDollarParen,
+	_TokenKindName[844:851]:      Comment,
+	_TokenKindLowerName[844:851]: Comment,
+	_TokenKindName[851:870]:      PreprocessorInclude,
+	_TokenKindLowerName[851:870]: PreprocessorInclude,
+	_TokenKindName[870:889]:      PreprocessorUnknown,
+	_TokenKindLowerName[870:889]: PreprocessorUnknown,
+	_TokenKindName[889:892]:      EOF,
+	_TokenKindLowerName[889:892]: EOF,
+	_TokenKindName[892:899]:      NewLine,
+	_TokenKindLowerName[892:899]: NewLine,
 }
 
 var _TokenKindNames = []string{
@@ -220,55 +229,58 @@ var _TokenKindNames = []string{
 	_TokenKindName[79:90],
 	_TokenKindName[90:101],
 	_TokenKindName[101:114],
-	_TokenKindName[114:128],
-	_TokenKindName[128:149],
-	_TokenKindName[149:166],
-	_TokenKindName[166:188],
-	_TokenKindName[188:210],
-	_TokenKindName[210:230],
-	_TokenKindName[230:246],
-	_TokenKindName[246:263],
-	_TokenKindName[263:277],
-	_TokenKindName[277:290],
-	_TokenKindName[290:305],
-	_TokenKindName[305:321],
-	_TokenKindName[321:342],
-	_TokenKindName[342:361],
-	_TokenKindName[361:385],
-	_TokenKindName[385:399],
-	_TokenKindName[399:412],
-	_TokenKindName[412:432],
-	_TokenKindName[432:443],
-	_TokenKindName[443:459],
-	_TokenKindName[459:475],
-	_TokenKindName[475:489],
-	_TokenKindName[489:500],
-	_TokenKindName[500:510],
-	_TokenKindName[510:524],
-	_TokenKindName[524:541],
-	_TokenKindName[541:554],
-	_TokenKindName[554:573],
-	_TokenKindName[573:586],
-	_TokenKindName[586:601],
-	_TokenKindName[601:612],
-	_TokenKindName[612:623],
-	_TokenKindName[623:635],
-	_TokenKindName[635:650],
-	_TokenKindName[650:666],
-	_TokenKindName[666:683],
-	_TokenKindName[683:701],
-	_TokenKindName[701:716],
-	_TokenKindName[716:732],
-	_TokenKindName[732:741],
-	_TokenKindName[741:752],
-	_TokenKindName[752:764],
-	_TokenKindName[764:781],
-	_TokenKindName[781:788],
-	_TokenKindName[788:795],
-	_TokenKindName[795:814],
-	_TokenKindName[814:833],
-	_TokenKindName[833:836],
-	_TokenKindName[836:843],
+	_TokenKindName[114:132],
+	_TokenKindName[132:150],
+	_TokenKindName[150:170],
+	_TokenKindName[170:177],
+	_TokenKindName[177:191],
+	_TokenKindName[191:212],
+	_TokenKindName[212:229],
+	_TokenKindName[229:251],
+	_TokenKindName[251:273],
+	_TokenKindName[273:293],
+	_TokenKindName[293:309],
+	_TokenKindName[309:326],
+	_TokenKindName[326:340],
+	_TokenKindName[340:353],
+	_TokenKindName[353:368],
+	_TokenKindName[368:384],
+	_TokenKindName[384:405],
+	_TokenKindName[405:424],
+	_TokenKindName[424:448],
+	_TokenKindName[448:462],
+	_TokenKindName[462:475],
+	_TokenKindName[475:495],
+	_TokenKindName[495:506],
+	_TokenKindName[506:522],
+	_TokenKindName[522:538],
+	_TokenKindName[538:552],
+	_TokenKindName[552:563],
+	_TokenKindName[563:573],
+	_TokenKindName[573:587],
+	_TokenKindName[587:604],
+	_TokenKindName[604:617],
+	_TokenKindName[617:636],
+	_TokenKindName[636:649],
+	_TokenKindName[649:664],
+	_TokenKindName[664:675],
+	_TokenKindName[675:686],
+	_TokenKindName[686:698],
+	_TokenKindName[698:713],
+	_TokenKindName[713:729],
+	_TokenKindName[729:746],
+	_TokenKindName[746:764],
+	_TokenKindName[764:779],
+	_TokenKindName[779:795],
+	_TokenKindName[795:804],
+	_TokenKindName[804:815],
+	_TokenKindName[815:827],
+	_TokenKindName[827:844],
+	_TokenKindName[844:851],
+	_TokenKindName[851:870],
+	_TokenKindName[870:889],
+	_TokenKindName[889:892],
+	_TokenKindName[892:899],
 }
 
 // TokenKindString retrieves an enum value from the enum constants string name.

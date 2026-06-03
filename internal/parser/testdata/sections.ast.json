@@ -1,0 +1,171 @@
+[
+  {
+    "Type": "parser.SectionSwitch",
+    "Kind": {
+      "Kind": {
+        "Channo": 1,
+        "Namespace": "Nc"
+      }
+    },
+    "Range": {
+      "Start": {
+        "Line": 0,
+        "Column": 0
+      },
+      "End": {
+        "Line": 0,
+        "Column": 7
+      }
+    }
+  },
+  {
+    "Type": "parser.NewLine",
+    "Kind": {},
+    "Range": {
+      "Start": {
+        "Line": 0,
+        "Column": 6
+      },
+      "End": {
+        "Line": 0,
+        "Column": 7
+      }
+    }
+  },
+  {
+    "Type": "parser.SectionSwitch",
+    "Kind": {
+      "Kind": {
+        "Channo": 1,
+        "Namespace": "Unqualified"
+      }
+    },
+    "Range": {
+      "Start": {
+        "Line": 1,
+        "Column": 0
+      },
+      "End": {
+        "Line": 1,
+        "Column": 5
+      }
+    }
+  },
+  {
+    "Type": "parser.NewLine",
+    "Kind": {},
+    "Range": {
+      "Start": {
+        "Line": 1,
+        "Column": 4
+      },
+      "End": {
+        "Line": 1,
+        "Column": 5
+      }
+    }
+  },
+  {
+    "Type": "parser.SectionSwitch",
+    "Kind": {
+      "Kind": {
+        "Channo": 1,
+        "Namespace": "Chandata"
+      }
+    },
+    "Range": {
+      "Start": {
+        "Line": 2,
+        "Column": 0
+      },
+      "End": {
+        "Line": 2,
+        "Column": 12
+      }
+    }
+  },
+  {
+    "Type": "parser.NewLine",
+    "Kind": {},
+    "Range": {
+      "Start": {
+        "Line": 2,
+        "Column": 11
+      },
+      "End": {
+        "Line": 2,
+        "Column": 12
+      }
+    }
+  },
+  {
+    "Type": "parser.SectionSwitch",
+    "Kind": {
+      "Kind": {
+        "Bus": 3,
+        "Slave": 3,
+        "Do": 3,
+        "Namespace": "Unqualified"
+      }
+    },
+    "Range": {
+      "Start": {
+        "Line": 3,
+        "Column": 0
+      },
+      "End": {
+        "Line": 3,
+        "Column": 12
+      }
+    }
+  },
+  {
+    "Type": "parser.NewLine",
+    "Kind": {},
+    "Range": {
+      "Start": {
+        "Line": 3,
+        "Column": 11
+      },
+      "End": {
+        "Line": 3,
+        "Column": 12
+      }
+    }
+  },
+  {
+    "Type": "parser.SectionSwitch",
+    "Kind": {
+      "Kind": {
+        "Bus": 3,
+        "Slave": 3,
+        "Do": 3,
+        "Namespace": "Ps"
+      }
+    },
+    "Range": {
+      "Start": {
+        "Line": 4,
+        "Column": 0
+      },
+      "End": {
+        "Line": 4,
+        "Column": 14
+      }
+    }
+  },
+  {
+    "Type": "parser.NewLine",
+    "Kind": {},
+    "Range": {
+      "Start": {
+        "Line": 4,
+        "Column": 13
+      },
+      "End": {
+        "Line": 4,
+        "Column": 14
+      }
+    }
+  }
+]

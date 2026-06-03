@@ -8,11 +8,11 @@ import (
 	"strings"
 )
 
-const _DiagnosticKindName = "UnexpectedTokenFunctionInvalidIdentifierFunctionInvalidParameterDefFunctionInvalidBeforeOpeningBraceFunctionMissingOpeningBraceFunctionBodyClosingBraceMissingSectionInvalidDriveSectionInvalidChanSectionFormatUnrecognicedPreprocessorUnknownExpressionGroupedMissingClosingParenthesesNumberLiteralInvalidExponentNumberLiteralParseErrorBicoLiteralParseErrorVersionLiteralParserErrorExpressionInvalidBitwiseLiteralInvalidHexBitwiseLiteralInvalidBinExpressionReplacementMissingClosingParenthesesWhileEndMissingIfThenEndMissingIfElseIfEndMissingIfElseEndMissingCallStatementMalformedInvaliStatementSectionUnterminatedStringUnterminatedNumberFormatUnterminated"
+const _DiagnosticKindName = "UnexpectedTokenFunctionInvalidIdentifierFunctionInvalidParameterDefFunctionInvalidBeforeOpeningBraceFunctionMissingOpeningBraceFunctionBodyClosingBraceMissingSectionInvalidDriveSectionInvalidChanSectionFormatUnrecognicedPreprocessorUnknownExpressionGroupedMissingClosingParenthesesNumberLiteralInvalidExponentNumberLiteralParseErrorBicoLiteralParseErrorVersionLiteralParserErrorExpressionInvalidBitwiseLiteralInvalidHexBitwiseLiteralInvalidBinExpressionReplacementMissingClosingParenthesesWhileEndMissingIfThenEndMissingIfElseIfEndMissingIfElseEndMissingCallStatementMalformedInvaliStatementFullyQualifiedIdentMissingSectionUnterminatedStringUnterminatedNumberFormatUnterminated"
 
-var _DiagnosticKindIndex = [...]uint16{0, 15, 40, 67, 100, 127, 158, 177, 195, 220, 239, 281, 309, 332, 353, 378, 395, 419, 443, 489, 504, 520, 538, 554, 576, 591, 610, 628, 652}
+var _DiagnosticKindIndex = [...]uint16{0, 15, 40, 67, 100, 127, 158, 177, 195, 220, 239, 281, 309, 332, 353, 378, 395, 419, 443, 489, 504, 520, 538, 554, 576, 591, 617, 636, 654, 678}
 
-const _DiagnosticKindLowerName = "unexpectedtokenfunctioninvalididentifierfunctioninvalidparameterdeffunctioninvalidbeforeopeningbracefunctionmissingopeningbracefunctionbodyclosingbracemissingsectioninvaliddrivesectioninvalidchansectionformatunrecognicedpreprocessorunknownexpressiongroupedmissingclosingparenthesesnumberliteralinvalidexponentnumberliteralparseerrorbicoliteralparseerrorversionliteralparsererrorexpressioninvalidbitwiseliteralinvalidhexbitwiseliteralinvalidbinexpressionreplacementmissingclosingparentheseswhileendmissingifthenendmissingifelseifendmissingifelseendmissingcallstatementmalformedinvalistatementsectionunterminatedstringunterminatednumberformatunterminated"
+const _DiagnosticKindLowerName = "unexpectedtokenfunctioninvalididentifierfunctioninvalidparameterdeffunctioninvalidbeforeopeningbracefunctionmissingopeningbracefunctionbodyclosingbracemissingsectioninvaliddrivesectioninvalidchansectionformatunrecognicedpreprocessorunknownexpressiongroupedmissingclosingparenthesesnumberliteralinvalidexponentnumberliteralparseerrorbicoliteralparseerrorversionliteralparsererrorexpressioninvalidbitwiseliteralinvalidhexbitwiseliteralinvalidbinexpressionreplacementmissingclosingparentheseswhileendmissingifthenendmissingifelseifendmissingifelseendmissingcallstatementmalformedinvalistatementfullyqualifiedidentmissingsectionunterminatedstringunterminatednumberformatunterminated"
 
 func (i DiagnosticKind) String() string {
 	if i < 0 || i >= DiagnosticKind(len(_DiagnosticKindIndex)-1) {
@@ -50,12 +50,13 @@ func _DiagnosticKindNoOp() {
 	_ = x[IfElseEndMissing-(22)]
 	_ = x[CallStatementMalformed-(23)]
 	_ = x[InvaliStatement-(24)]
-	_ = x[SectionUnterminated-(25)]
-	_ = x[StringUnterminated-(26)]
-	_ = x[NumberFormatUnterminated-(27)]
+	_ = x[FullyQualifiedIdentMissing-(25)]
+	_ = x[SectionUnterminated-(26)]
+	_ = x[StringUnterminated-(27)]
+	_ = x[NumberFormatUnterminated-(28)]
 }
 
-var _DiagnosticKindValues = []DiagnosticKind{UnexpectedToken, FunctionInvalidIdentifier, FunctionInvalidParameterDef, FunctionInvalidBeforeOpeningBrace, FunctionMissingOpeningBrace, FunctionBodyClosingBraceMissing, SectionInvalidDrive, SectionInvalidChan, SectionFormatUnrecogniced, PreprocessorUnknown, ExpressionGroupedMissingClosingParentheses, NumberLiteralInvalidExponent, NumberLiteralParseError, BicoLiteralParseError, VersionLiteralParserError, ExpressionInvalid, BitwiseLiteralInvalidHex, BitwiseLiteralInvalidBin, ExpressionReplacementMissingClosingParentheses, WhileEndMissing, IfThenEndMissing, IfElseIfEndMissing, IfElseEndMissing, CallStatementMalformed, InvaliStatement, SectionUnterminated, StringUnterminated, NumberFormatUnterminated}
+var _DiagnosticKindValues = []DiagnosticKind{UnexpectedToken, FunctionInvalidIdentifier, FunctionInvalidParameterDef, FunctionInvalidBeforeOpeningBrace, FunctionMissingOpeningBrace, FunctionBodyClosingBraceMissing, SectionInvalidDrive, SectionInvalidChan, SectionFormatUnrecogniced, PreprocessorUnknown, ExpressionGroupedMissingClosingParentheses, NumberLiteralInvalidExponent, NumberLiteralParseError, BicoLiteralParseError, VersionLiteralParserError, ExpressionInvalid, BitwiseLiteralInvalidHex, BitwiseLiteralInvalidBin, ExpressionReplacementMissingClosingParentheses, WhileEndMissing, IfThenEndMissing, IfElseIfEndMissing, IfElseEndMissing, CallStatementMalformed, InvaliStatement, FullyQualifiedIdentMissing, SectionUnterminated, StringUnterminated, NumberFormatUnterminated}
 
 var _DiagnosticKindNameToValueMap = map[string]DiagnosticKind{
 	_DiagnosticKindName[0:15]:         UnexpectedToken,
@@ -108,12 +109,14 @@ var _DiagnosticKindNameToValueMap = map[string]DiagnosticKind{
 	_DiagnosticKindLowerName[554:576]: CallStatementMalformed,
 	_DiagnosticKindName[576:591]:      InvaliStatement,
 	_DiagnosticKindLowerName[576:591]: InvaliStatement,
-	_DiagnosticKindName[591:610]:      SectionUnterminated,
-	_DiagnosticKindLowerName[591:610]: SectionUnterminated,
-	_DiagnosticKindName[610:628]:      StringUnterminated,
-	_DiagnosticKindLowerName[610:628]: StringUnterminated,
-	_DiagnosticKindName[628:652]:      NumberFormatUnterminated,
-	_DiagnosticKindLowerName[628:652]: NumberFormatUnterminated,
+	_DiagnosticKindName[591:617]:      FullyQualifiedIdentMissing,
+	_DiagnosticKindLowerName[591:617]: FullyQualifiedIdentMissing,
+	_DiagnosticKindName[617:636]:      SectionUnterminated,
+	_DiagnosticKindLowerName[617:636]: SectionUnterminated,
+	_DiagnosticKindName[636:654]:      StringUnterminated,
+	_DiagnosticKindLowerName[636:654]: StringUnterminated,
+	_DiagnosticKindName[654:678]:      NumberFormatUnterminated,
+	_DiagnosticKindLowerName[654:678]: NumberFormatUnterminated,
 }
 
 var _DiagnosticKindNames = []string{
@@ -142,9 +145,10 @@ var _DiagnosticKindNames = []string{
 	_DiagnosticKindName[538:554],
 	_DiagnosticKindName[554:576],
 	_DiagnosticKindName[576:591],
-	_DiagnosticKindName[591:610],
-	_DiagnosticKindName[610:628],
-	_DiagnosticKindName[628:652],
+	_DiagnosticKindName[591:617],
+	_DiagnosticKindName[617:636],
+	_DiagnosticKindName[636:654],
+	_DiagnosticKindName[654:678],
 }
 
 // DiagnosticKindString retrieves an enum value from the enum constants string name.

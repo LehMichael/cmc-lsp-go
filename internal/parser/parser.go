@@ -76,8 +76,8 @@ func (p *parser) parseStatement(leadingComments []string) Statement {
 		return p.parseIfBlock(leadingComments)
 	case l.KeywordWhile:
 		return p.parseWhileBlock(leadingComments)
-	case l.Section:
-		return p.parseSection(leadingComments)
+	case l.Section, l.KeywordNamespaceChan, l.KeywordNamespaceNc, l.KeywordNamespacePs:
+		return p.parseSectionStatement(leadingComments)
 	case l.LiteralIdentifier:
 		return p.parseIdentifierStatement(leadingComments)
 	case l.PreprocessorInclude:
@@ -119,7 +119,7 @@ func (p *parser) parseFunctionStatement(leadingComments []string) Statement {
 	var identifier *IdentifierExpression
 	if p.currentToken().Kind == l.LiteralIdentifier ||
 		p.currentToken().Kind == l.SymbolDollarParen {
-		i := p.parseIdentifier()
+		i := p.parseIdentifier(nil)
 		identifier = &i
 	} else {
 		invalidIdentTokens = p.recoverFromError(
@@ -275,7 +275,7 @@ func (p *parser) parsePreprocessor(leadingComments []string) Statement {
 
 	return Statement{
 		Kind: PreprocessorStatement{
-			kind: kind,
+			Kind: kind,
 		},
 		LeadingComments: leadingComments,
 		TrailingComment: trailingComment,
@@ -285,7 +285,7 @@ func (p *parser) parsePreprocessor(leadingComments []string) Statement {
 }
 
 func (p *parser) parseIdentifierStatement(leadingComments []string) Statement {
-	identifier := p.parseIdentifier()
+	identifier := p.parseIdentifier(nil)
 
 	token := p.currentToken()
 
@@ -495,77 +495,80 @@ func tokenToAssignmentKind(token l.Token) *AssignmentKind {
 	return &assignmentKind
 }
 
-func (p *parser) parseSection(leadingComments []string) Statement {
+func (p *parser) parseSection() SectionSwitchKind {
 	startToken := p.currentToken()
-	if startToken.Kind != l.Section {
+	if startToken.Kind != l.KeywordNamespaceNc && startToken.Kind != l.KeywordNamespaceChan &&
+		startToken.Kind != l.KeywordNamespacePs &&
+		startToken.Kind != l.Section {
 		panic("must be called with section token")
 	}
 	startPos := p.Pos
 
-	_ = p.advance()
+	var ns SectionNamespaceKind
+	switch startToken.Kind {
+	case l.KeywordNamespaceChan:
+		ns = Chandata
+		_ = p.advance()
+	case l.KeywordNamespaceNc:
+		ns = Nc
+		_ = p.advance()
+	case l.KeywordNamespacePs:
+		ns = Ps
+		_ = p.advance()
+	default:
+		ns = Unqualified
+	}
 
-	var section SectionSwitchKind
-	lexeme := startToken.Lexeme
+	lexeme := p.currentToken().Lexeme
+	_ = p.advance()
 
 	switch {
 	case strings.HasPrefix(lexeme, "[B"):
-		if s, err := parseDriveSection(lexeme); err == nil {
-			section = s
+		if s, err := parseDriveSection(lexeme, ns); err == nil {
+			return s
 		} else {
 			i := p.recoverFromError(
 				diag.SectionInvalidDrive,
 				startPos,
 				[]l.TokenKind{l.NewLine, l.EOF, l.Comment},
 			)
-			section = InvalidSection(i)
+			return InvalidSection(i)
 		}
 	case strings.HasPrefix(lexeme, "[C"):
-		if s, err := parseChanSection(lexeme); err == nil {
-			section = s
+		if s, err := parseChanSection(lexeme, ns); err == nil {
+			return s
 		} else {
 			i := p.recoverFromError(
 				diag.SectionInvalidChan, startPos,
 				[]l.TokenKind{l.NewLine, l.EOF, l.Comment},
 			)
-			section = InvalidSection(i)
+			return InvalidSection(i)
 		}
-	case strings.HasPrefix(lexeme, "CHANDATA("):
-		if s, err := parseChandataSection(lexeme); err == nil {
-			section = s
+	case strings.HasPrefix(lexeme, "("):
+		if s, err := parseChandataSection(lexeme, ns); err == nil {
+			return s
 		} else {
 			i := p.recoverFromError(
 				diag.SectionInvalidChan, startPos,
 				[]l.TokenKind{l.NewLine, l.EOF, l.Comment},
 			)
-			section = InvalidSection(i)
+			return InvalidSection(i)
 		}
 	default:
 		i := p.recoverFromError(
 			diag.SectionFormatUnrecogniced, startPos,
 			[]l.TokenKind{l.NewLine, l.EOF, l.Comment},
 		)
-		section = InvalidSection(i)
+		return InvalidSection(i)
 	}
+}
 
-	var invalidEndTokens []l.Token
-	if t := p.expect([]l.TokenKind{l.NewLine, l.EOF, l.Comment}); t == nil {
-		invalidEndTokens = p.recoverFromError(
-			diag.UnexpectedToken,
-			p.Pos,
-			[]l.TokenKind{l.NewLine, l.EOF, l.Comment},
-		)
-	}
+func (p *parser) parseSectionStatement(leadingComments []string) Statement {
+	startToken := p.currentToken()
+	section := p.parseSection()
+	endToken := p.currentToken()
 
-	trailingComment := p.parseOptionalComment()
-
-	if t := p.expectAndAdvance([]l.TokenKind{l.NewLine, l.EOF}); t == nil {
-		invalidEndTokens = p.recoverFromError(
-			diag.UnexpectedToken,
-			p.Pos,
-			[]l.TokenKind{l.NewLine, l.EOF},
-		)
-		_ = p.advance()
-	}
+	invalidEndTokens, trailingComment := p.parseEndComment()
 
 	return Statement{
 		Kind: SectionSwitch{
@@ -574,36 +577,41 @@ func (p *parser) parseSection(leadingComments []string) Statement {
 		},
 		LeadingComments: leadingComments,
 		TrailingComment: trailingComment,
-		// Range:           source.FromToken(startToken),
-		Range: startToken.Range,
+		Range:           source.MergeRange(startToken.Range, endToken.Range),
 	}
 }
 
-func parseChandataSection(section string) (*ChannelSection, error) {
-	// format: CHANDATA(<chan>)
-	trimmed := string([]rune(section)[9 : utf8.RuneCountInString(section)-1])
+func parseChandataSection(section string, ns SectionNamespaceKind) (*ChannelSection, error) {
+	// format:(<chan>)
+	trimmed := string([]rune(section)[1 : utf8.RuneCountInString(section)-1])
 	channel, err := strconv.ParseUint(trimmed, 10, 8)
 	if err != nil {
 		return nil, err
 	}
-	c := ChannelSection(channel)
+	c := ChannelSection{
+		Channo:    uint8(channel),
+		Namespace: ns,
+	}
 
 	return &c, nil
 }
 
-func parseChanSection(section string) (*ChannelSection, error) {
+func parseChanSection(section string, ns SectionNamespaceKind) (*ChannelSection, error) {
 	// format: [C<chan>]
 	trimmed := string([]rune(section)[2 : utf8.RuneCountInString(section)-1])
 	channel, err := strconv.ParseUint(trimmed, 10, 8)
 	if err != nil {
 		return nil, err
 	}
-	c := ChannelSection(channel)
+	c := ChannelSection{
+		Channo:    uint8(channel),
+		Namespace: ns,
+	}
 
 	return &c, nil
 }
 
-func parseDriveSection(section string) (*DriveSection, error) {
+func parseDriveSection(section string, ns SectionNamespaceKind) (*DriveSection, error) {
 	// format: [B<bus>_S<slave>_PS<do>]
 	trimmed := string([]rune(section)[1 : utf8.RuneCountInString(section)-1])
 	parts := strings.Split(trimmed, "_")
@@ -624,9 +632,10 @@ func parseDriveSection(section string) (*DriveSection, error) {
 	}
 
 	return &DriveSection{
-		Bus:   uint8(bus),
-		Slave: uint8(slave),
-		Do:    uint8(do),
+		Bus:       uint8(bus),
+		Slave:     uint8(slave),
+		Do:        uint8(do),
+		Namespace: ns,
 	}, nil
 }
 
@@ -982,7 +991,7 @@ func (p *parser) parseExpression(minPrec uint8) Expression {
 	case l.OperatorNegate, l.OperatorAdd, l.OperatorSubtract:
 		expression = p.parsePrefixedExpression()
 	case l.LiteralIdentifier, l.SymbolDollarParen:
-		innerIdent := p.parseIdentifier()
+		innerIdent := p.parseIdentifier(nil)
 
 		expression.Kind = innerIdent
 		expression.Range = innerIdent.Range
@@ -1011,6 +1020,24 @@ func (p *parser) parseExpression(minPrec uint8) Expression {
 		expression = Expression{
 			Kind:  FalseLiteral{},
 			Range: token.Range,
+		}
+	case l.KeywordNamespaceNc:
+		fallthrough
+	case l.KeywordNamespacePs:
+		section := p.parseSection()
+		if p.currentToken().Kind == l.SymbolDot {
+			_ = p.advance()
+			ident := p.parseIdentifier(&section)
+			expression.Kind = ident
+			expression.Range = ident.Range
+		} else {
+			_ = p.advance()
+			p.Diagnostics = append(p.Diagnostics, diag.Diagnostic{
+				Kind:     diag.FullyQualifiedIdentMissing,
+				Range:    token.Range,
+				Severity: diag.Error,
+			})
+
 		}
 	default:
 		_ = p.advance()
@@ -1337,7 +1364,7 @@ func parseBico(bico string) (*BicoLiteral, error) {
 	}, nil
 }
 
-func (p *parser) parseIdentifier() IdentifierExpression {
+func (p *parser) parseIdentifier(section *SectionSwitchKind) IdentifierExpression {
 	startToken := p.currentToken()
 	token := startToken
 	endToken := startToken
@@ -1352,7 +1379,7 @@ loop:
 			parts = append(parts, LiteralIdentifier(token.Lexeme))
 		case l.SymbolDollarParen:
 			_ = p.advance()
-			replacement := p.parseIdentifier()
+			replacement := p.parseIdentifier(nil)
 			parts = append(parts, ReplacementIdentifier(replacement))
 			if t := p.expectAndAdvance([]l.TokenKind{l.SymbolRightParen}); t == nil {
 				p.Diagnostics = append(p.Diagnostics, diag.Diagnostic{
@@ -1379,6 +1406,7 @@ loop:
 	return IdentifierExpression{
 		Segments: segments,
 		Range:    source.MergeRange(startToken.Range, endToken.Range),
+		Section:  section,
 	}
 }
 

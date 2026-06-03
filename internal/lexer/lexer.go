@@ -101,12 +101,24 @@ func (l *Lexer) NextToken() Token {
 		token = l.createTokenCount(OperatorGreaterThanEqual, leadingWhitespace, 2)
 	case c == '>':
 		token = l.createTokenCount(OperatorGreaterThan, leadingWhitespace, 1)
-	case c == '[' && l.lastTokenKind == NewLine:
-		token = l.createDelimitedToken(Section, diag.SectionUnterminated, leadingWhitespace, ']')
+	case c == '[' && (l.lastTokenKind == NewLine || l.lastTokenKind == KeywordNamespaceNc || l.lastTokenKind == KeywordNamespacePs):
+		token = l.createDelimitedToken(
+			Section,
+			diag.SectionUnterminated,
+			leadingWhitespace,
+			']',
+		)
 	case c == '[':
 		token = l.createTokenCount(SymbolLeftBracket, leadingWhitespace, 1)
 	case c == ']':
 		token = l.createTokenCount(SymbolRightBracket, leadingWhitespace, 1)
+	case c == '(' && l.lastTokenKind == KeywordNamespaceChan:
+		token = l.createDelimitedToken(
+			Section,
+			diag.SectionUnterminated,
+			leadingWhitespace,
+			')',
+		)
 	case c == '(':
 		token = l.createTokenCount(SymbolLeftParen, leadingWhitespace, 1)
 	case c == ')':
@@ -235,9 +247,15 @@ func (l *Lexer) createIdentifierToken(leadingWhitespace string) Token {
 		token.Kind = KeywordFunc
 	case strings.EqualFold(token.Lexeme, "return"):
 		token.Kind = KeywordReturn
-	case len(token.Lexeme) > 11 && strings.EqualFold(token.Lexeme[:10], "chandata("):
-		token.Kind = Section
+	case strings.EqualFold(token.Lexeme, "nc"):
+		token.Kind = KeywordNamespaceNc
+	case strings.EqualFold(token.Lexeme, "ps"):
+		token.Kind = KeywordNamespacePs
+	case strings.EqualFold(token.Lexeme, "chandata"):
+		token.Kind = KeywordNamespaceChan
 	}
+
+	l.lastTokenKind = token.Kind
 
 	return token
 }

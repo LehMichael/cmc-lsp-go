@@ -23,13 +23,15 @@
             "Line": 1,
             "Column": 10
           }
-        }
+        },
+        "Section": null
       },
       "LeadingCommentsEnd": [
         "; asdf1"
       ],
       "TrailingCommentStart": "; comment",
       "ArgCount": 0,
+      "MissingOpeningBrace": false,
       "Body": [
         {
           "Type": "parser.Assignment",
@@ -63,7 +65,8 @@
                   "Line": 2,
                   "Column": 11
                 }
-              }
+              },
+              "Section": null
             },
             "Value": {
               "Type": "parser.IntegerLiteral",
@@ -168,7 +171,7 @@
           }
         }
       ],
-      "InvalidOpeningBrace": [
+      "InvalidBeforeOpeningBrace": [
         {
           "Kind": "LiteralIdentifier",
           "Lexeme": "test",
