@@ -8,11 +8,11 @@ import (
 	"strings"
 )
 
-const _DiagnosticKindName = "UnexpectedTokenFunctionInvalidIdentifierFunctionInvalidParameterDefFunctionInvalidBeforeOpeningBraceFunctionMissingOpeningBraceFunctionBodyClosingBraceMissingSectionInvalidDriveSectionInvalidChanSectionFormatUnrecognicedPreprocessorUnknownExpressionGroupedMissingClosingParenthesesNumberLiteralInvalidExponentNumberLiteralParseErrorBicoLiteralParseErrorVersionLiteralParserErrorExpressionInvalidBitwiseLiteralInvalidHexBitwiseLiteralInvalidBinExpressionReplacementMissingClosingParenthesesWhileEndMissingIfThenEndMissingIfElseIfEndMissingIfElseEndMissingCallStatementMalformedInvaliStatementFullyQualifiedIdentMissingSectionUnterminatedStringUnterminatedNumberFormatUnterminated"
+const _DiagnosticKindName = "UnexpectedTokenFunctionInvalidIdentifierFunctionInvalidParameterDefFunctionInvalidBeforeOpeningBraceFunctionMissingOpeningBraceFunctionBodyClosingBraceMissingSectionInvalidDriveSectionInvalidChanSectionFormatUnrecognicedPreprocessorUnknownExpressionGroupedMissingClosingParenthesesNumberLiteralInvalidExponentNumberLiteralParseErrorBicoLiteralParseErrorVersionLiteralParserErrorExpressionInvalidBitwiseLiteralInvalidHexBitwiseLiteralInvalidBinExpressionReplacementMissingClosingParenthesesWhileEndMissingIfThenEndMissingIfElseIfEndMissingIfElseEndMissingCallStatementMalformedInvaliStatementFullyQualifiedIdentMissingSectionUnterminatedStringUnterminatedNumberFormatUnterminatedMissingIncludeCircularInclude"
 
-var _DiagnosticKindIndex = [...]uint16{0, 15, 40, 67, 100, 127, 158, 177, 195, 220, 239, 281, 309, 332, 353, 378, 395, 419, 443, 489, 504, 520, 538, 554, 576, 591, 617, 636, 654, 678}
+var _DiagnosticKindIndex = [...]uint16{0, 15, 40, 67, 100, 127, 158, 177, 195, 220, 239, 281, 309, 332, 353, 378, 395, 419, 443, 489, 504, 520, 538, 554, 576, 591, 617, 636, 654, 678, 692, 707}
 
-const _DiagnosticKindLowerName = "unexpectedtokenfunctioninvalididentifierfunctioninvalidparameterdeffunctioninvalidbeforeopeningbracefunctionmissingopeningbracefunctionbodyclosingbracemissingsectioninvaliddrivesectioninvalidchansectionformatunrecognicedpreprocessorunknownexpressiongroupedmissingclosingparenthesesnumberliteralinvalidexponentnumberliteralparseerrorbicoliteralparseerrorversionliteralparsererrorexpressioninvalidbitwiseliteralinvalidhexbitwiseliteralinvalidbinexpressionreplacementmissingclosingparentheseswhileendmissingifthenendmissingifelseifendmissingifelseendmissingcallstatementmalformedinvalistatementfullyqualifiedidentmissingsectionunterminatedstringunterminatednumberformatunterminated"
+const _DiagnosticKindLowerName = "unexpectedtokenfunctioninvalididentifierfunctioninvalidparameterdeffunctioninvalidbeforeopeningbracefunctionmissingopeningbracefunctionbodyclosingbracemissingsectioninvaliddrivesectioninvalidchansectionformatunrecognicedpreprocessorunknownexpressiongroupedmissingclosingparenthesesnumberliteralinvalidexponentnumberliteralparseerrorbicoliteralparseerrorversionliteralparsererrorexpressioninvalidbitwiseliteralinvalidhexbitwiseliteralinvalidbinexpressionreplacementmissingclosingparentheseswhileendmissingifthenendmissingifelseifendmissingifelseendmissingcallstatementmalformedinvalistatementfullyqualifiedidentmissingsectionunterminatedstringunterminatednumberformatunterminatedmissingincludecircularinclude"
 
 func (i DiagnosticKind) String() string {
 	if i < 0 || i >= DiagnosticKind(len(_DiagnosticKindIndex)-1) {
@@ -54,9 +54,11 @@ func _DiagnosticKindNoOp() {
 	_ = x[SectionUnterminated-(26)]
 	_ = x[StringUnterminated-(27)]
 	_ = x[NumberFormatUnterminated-(28)]
+	_ = x[MissingInclude-(29)]
+	_ = x[CircularInclude-(30)]
 }
 
-var _DiagnosticKindValues = []DiagnosticKind{UnexpectedToken, FunctionInvalidIdentifier, FunctionInvalidParameterDef, FunctionInvalidBeforeOpeningBrace, FunctionMissingOpeningBrace, FunctionBodyClosingBraceMissing, SectionInvalidDrive, SectionInvalidChan, SectionFormatUnrecogniced, PreprocessorUnknown, ExpressionGroupedMissingClosingParentheses, NumberLiteralInvalidExponent, NumberLiteralParseError, BicoLiteralParseError, VersionLiteralParserError, ExpressionInvalid, BitwiseLiteralInvalidHex, BitwiseLiteralInvalidBin, ExpressionReplacementMissingClosingParentheses, WhileEndMissing, IfThenEndMissing, IfElseIfEndMissing, IfElseEndMissing, CallStatementMalformed, InvaliStatement, FullyQualifiedIdentMissing, SectionUnterminated, StringUnterminated, NumberFormatUnterminated}
+var _DiagnosticKindValues = []DiagnosticKind{UnexpectedToken, FunctionInvalidIdentifier, FunctionInvalidParameterDef, FunctionInvalidBeforeOpeningBrace, FunctionMissingOpeningBrace, FunctionBodyClosingBraceMissing, SectionInvalidDrive, SectionInvalidChan, SectionFormatUnrecogniced, PreprocessorUnknown, ExpressionGroupedMissingClosingParentheses, NumberLiteralInvalidExponent, NumberLiteralParseError, BicoLiteralParseError, VersionLiteralParserError, ExpressionInvalid, BitwiseLiteralInvalidHex, BitwiseLiteralInvalidBin, ExpressionReplacementMissingClosingParentheses, WhileEndMissing, IfThenEndMissing, IfElseIfEndMissing, IfElseEndMissing, CallStatementMalformed, InvaliStatement, FullyQualifiedIdentMissing, SectionUnterminated, StringUnterminated, NumberFormatUnterminated, MissingInclude, CircularInclude}
 
 var _DiagnosticKindNameToValueMap = map[string]DiagnosticKind{
 	_DiagnosticKindName[0:15]:         UnexpectedToken,
@@ -117,6 +119,10 @@ var _DiagnosticKindNameToValueMap = map[string]DiagnosticKind{
 	_DiagnosticKindLowerName[636:654]: StringUnterminated,
 	_DiagnosticKindName[654:678]:      NumberFormatUnterminated,
 	_DiagnosticKindLowerName[654:678]: NumberFormatUnterminated,
+	_DiagnosticKindName[678:692]:      MissingInclude,
+	_DiagnosticKindLowerName[678:692]: MissingInclude,
+	_DiagnosticKindName[692:707]:      CircularInclude,
+	_DiagnosticKindLowerName[692:707]: CircularInclude,
 }
 
 var _DiagnosticKindNames = []string{
@@ -149,6 +155,8 @@ var _DiagnosticKindNames = []string{
 	_DiagnosticKindName[617:636],
 	_DiagnosticKindName[636:654],
 	_DiagnosticKindName[654:678],
+	_DiagnosticKindName[678:692],
+	_DiagnosticKindName[692:707],
 }
 
 // DiagnosticKindString retrieves an enum value from the enum constants string name.

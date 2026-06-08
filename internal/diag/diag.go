@@ -48,6 +48,7 @@ const (
 
 	// analysis
 	MissingInclude
+	CircularInclude
 )
 
 //go:generate go tool enumer -type=DiagnosticSeverity -json
