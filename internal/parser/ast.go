@@ -92,9 +92,9 @@ type WhileBlock struct {
 
 func (WhileBlock) isStatementKind() {}
 
-type Call Expression
+type CallStatement CallExpression
 
-func (Call) isStatementKind() {}
+func (CallStatement) isStatementKind() {}
 
 //go:generate go tool enumer -type=SectionNamespaceKind -json
 type SectionNamespaceKind int
@@ -342,10 +342,7 @@ type CallExpression struct {
 	Identifier          IdentifierExpression
 	Parameters          []Expression
 	InvalidArgs         []lexer.Token
-	InvalidAfterArgs    []lexer.Token
 	MissingClosingParen bool
-	LeadingComments     []string `json:",omitempty"`
-	TrailingComment     *string  `json:",omitempty"`
 }
 
 func (CallExpression) isExpressionKind() {}

@@ -1,0 +1,219 @@
+[
+  {
+    "Type": "parser.Assignment",
+    "Kind": {
+      "Kind": "Assign",
+      "Target": {
+        "Segments": [
+          {
+            "Parts": [
+              {
+                "Type": "parser.LiteralIdentifier",
+                "Value": "Up"
+              }
+            ]
+          },
+          {
+            "Parts": [
+              {
+                "Type": "parser.LiteralIdentifier",
+                "Value": "test"
+              }
+            ]
+          }
+        ],
+        "Range": {
+          "Start": {
+            "Line": 0,
+            "Column": 0
+          },
+          "End": {
+            "Line": 0,
+            "Column": 7
+          }
+        },
+        "Section": null
+      },
+      "Value": {
+        "Type": "parser.CallExpression",
+        "Kind": {
+          "Identifier": {
+            "Segments": [
+              {
+                "Parts": [
+                  {
+                    "Type": "parser.LiteralIdentifier",
+                    "Value": "myfunc"
+                  }
+                ]
+              }
+            ],
+            "Range": {
+              "Start": {
+                "Line": 0,
+                "Column": 10
+              },
+              "End": {
+                "Line": 0,
+                "Column": 16
+              }
+            },
+            "Section": null
+          },
+          "Parameters": [
+            {
+              "Type": "parser.IntegerLiteral",
+              "Kind": 13,
+              "Range": {
+                "Start": {
+                  "Line": 0,
+                  "Column": 17
+                },
+                "End": {
+                  "Line": 0,
+                  "Column": 19
+                }
+              }
+            }
+          ],
+          "InvalidArgs": null,
+          "MissingClosingParen": false
+        },
+        "Range": {
+          "Start": {
+            "Line": 0,
+            "Column": 10
+          },
+          "End": {
+            "Line": 0,
+            "Column": 21
+          }
+        }
+      }
+    },
+    "Range": {
+      "Start": {
+        "Line": 0,
+        "Column": 0
+      },
+      "End": {
+        "Line": 0,
+        "Column": 21
+      }
+    }
+  },
+  {
+    "Type": "parser.NewLine",
+    "Kind": {},
+    "Range": {
+      "Start": {
+        "Line": 0,
+        "Column": 20
+      },
+      "End": {
+        "Line": 0,
+        "Column": 21
+      }
+    }
+  },
+  {
+    "Type": "parser.CallStatement",
+    "Kind": {
+      "Identifier": {
+        "Segments": [
+          {
+            "Parts": [
+              {
+                "Type": "parser.LiteralIdentifier",
+                "Value": "myproc"
+              }
+            ]
+          }
+        ],
+        "Range": {
+          "Start": {
+            "Line": 1,
+            "Column": 0
+          },
+          "End": {
+            "Line": 1,
+            "Column": 6
+          }
+        },
+        "Section": null
+      },
+      "Parameters": [
+        {
+          "Type": "parser.IdentifierExpression",
+          "Kind": {
+            "Segments": [
+              {
+                "Parts": [
+                  {
+                    "Type": "parser.LiteralIdentifier",
+                    "Value": "Up"
+                  }
+                ]
+              },
+              {
+                "Parts": [
+                  {
+                    "Type": "parser.LiteralIdentifier",
+                    "Value": "test"
+                  }
+                ]
+              }
+            ],
+            "Range": {
+              "Start": {
+                "Line": 1,
+                "Column": 7
+              },
+              "End": {
+                "Line": 1,
+                "Column": 14
+              }
+            },
+            "Section": null
+          },
+          "Range": {
+            "Start": {
+              "Line": 1,
+              "Column": 7
+            },
+            "End": {
+              "Line": 1,
+              "Column": 14
+            }
+          }
+        }
+      ],
+      "InvalidArgs": null,
+      "MissingClosingParen": false
+    },
+    "Range": {
+      "Start": {
+        "Line": 1,
+        "Column": 0
+      },
+      "End": {
+        "Line": 1,
+        "Column": 16
+      }
+    }
+  },
+  {
+    "Type": "parser.NewLine",
+    "Kind": {},
+    "Range": {
+      "Start": {
+        "Line": 1,
+        "Column": 15
+      },
+      "End": {
+        "Line": 1,
+        "Column": 16
+      }
+    }
+  }
+]

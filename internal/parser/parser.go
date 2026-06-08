@@ -395,10 +395,7 @@ func (p *parser) parseDeleteStatement(
 	}
 }
 
-func (p *parser) parseCallStatement(
-	identifier IdentifierExpression,
-	leadingComments []string,
-) Statement {
+func (p *parser) parseCallExpression(identifier IdentifierExpression) Expression {
 	startToken := p.currentToken()
 	if startToken.Kind != l.SymbolLeftParen {
 		panic("must be called with SymbolLeftParen token")
@@ -418,8 +415,6 @@ func (p *parser) parseCallStatement(
 		}
 	}
 
-	endToken := p.currentToken()
-
 	missingClosingParen := false
 	var invalidArgs []l.Token
 	if t := p.expectAndAdvance([]l.TokenKind{l.SymbolRightParen}); t == nil {
@@ -429,44 +424,42 @@ func (p *parser) parseCallStatement(
 			p.Pos,
 			[]l.TokenKind{l.SymbolRightParen, l.NewLine, l.EOF},
 		)
-		endToken = p.currentToken()
 		if p.currentToken().Kind == l.SymbolRightParen {
 			_ = p.advance()
 		}
 	}
 
-	var invalidAfterArgs []l.Token
-	if t := p.expect([]l.TokenKind{l.NewLine, l.EOF, l.Comment}); t == nil {
-		invalidAfterArgs = p.recoverFromError(
-			diag.UnexpectedToken,
-			p.Pos,
-			[]l.TokenKind{l.NewLine, l.EOF, l.Comment},
-		)
+	endToken := p.currentToken()
+
+	return Expression{
+		Kind: CallExpression{
+			Identifier:          identifier,
+			Parameters:          parameters,
+			InvalidArgs:         invalidArgs,
+			MissingClosingParen: missingClosingParen,
+		},
+		Range: source.MergeRange(identifier.Range, endToken.Range),
 	}
-	trailingComment := p.parseOptionalComment()
-	if t := p.expectAndAdvance([]l.TokenKind{l.NewLine, l.EOF}); t == nil {
-		invalidAfterArgs = p.recoverFromError(
-			diag.UnexpectedToken,
-			p.Pos,
-			[]l.TokenKind{l.NewLine, l.EOF},
-		)
-		_ = p.advance()
+}
+
+func (p *parser) parseCallStatement(
+	identifier IdentifierExpression,
+	leadingComments []string,
+) Statement {
+	expr := p.parseCallExpression(identifier)
+	var callEpr CallExpression
+	if c, ok := expr.Kind.(CallExpression); ok {
+		callEpr = c
 	}
 
+	invalidAfterArgs, trailingComment := p.parseEndComment()
+
 	return Statement{
-		Kind: Call{
-			Kind: CallExpression{
-				Identifier:          identifier,
-				Parameters:          parameters,
-				LeadingComments:     leadingComments,
-				TrailingComment:     trailingComment,
-				InvalidArgs:         invalidArgs,
-				InvalidAfterArgs:    invalidAfterArgs,
-				MissingClosingParen: missingClosingParen,
-			},
-			Range: source.MergeRange(startToken.Range, endToken.Range),
-		},
-		Range: source.MergeRange(startToken.Range, endToken.Range),
+		Kind:            CallStatement(callEpr),
+		LeadingComments: leadingComments,
+		TrailingComment: trailingComment,
+		InvalidAfter:    invalidAfterArgs,
+		Range:           expr.Range,
 	}
 }
 
@@ -991,10 +984,14 @@ func (p *parser) parseExpression(minPrec uint8) Expression {
 	case l.OperatorNegate, l.OperatorAdd, l.OperatorSubtract:
 		expression = p.parsePrefixedExpression()
 	case l.LiteralIdentifier, l.SymbolDollarParen:
-		innerIdent := p.parseIdentifier(nil)
+		identifier := p.parseIdentifier(nil)
 
-		expression.Kind = innerIdent
-		expression.Range = innerIdent.Range
+		if p.currentToken().Kind == l.SymbolLeftParen {
+			expression = p.parseCallExpression(identifier)
+		} else {
+			expression.Kind = identifier
+			expression.Range = identifier.Range
+		}
 	case l.LiteralString:
 		_ = p.advance()
 		expression.Kind = StringLiteral(token.Lexeme)

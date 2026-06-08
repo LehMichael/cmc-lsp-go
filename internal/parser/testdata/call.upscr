@@ -1,0 +1,2 @@
+Up.test = myfunc(13)
+myproc(Up.test)
