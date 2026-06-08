@@ -28,10 +28,8 @@ func TestLexer_NextToken(t *testing.T) {
 			input: "myVar",
 			want: []lexer.Token{
 				{
-					Kind:              lexer.LiteralIdentifier,
-					Lexeme:            "myVar",
-					LeadingWhitespace: "",
-					Location:          lexer.SourceLocation{Line: 0, Column: 0},
+					Kind:   lexer.LiteralIdentifier,
+					Lexeme: "myVar",
 				},
 			},
 			wantErr: false,
@@ -41,31 +39,45 @@ func TestLexer_NextToken(t *testing.T) {
 			input: "x =  42\n",
 			want: []lexer.Token{
 				{
-					Kind:              lexer.LiteralIdentifier,
-					Lexeme:            "x",
-					LeadingWhitespace: "",
-					Location:          lexer.SourceLocation{Line: 0, Column: 0},
+					Kind:   lexer.LiteralIdentifier,
+					Lexeme: "x",
 				},
 				{
-					Kind:              lexer.OperatorAssign,
-					Lexeme:            "=",
-					LeadingWhitespace: " ",
-					Location:          lexer.SourceLocation{Line: 0, Column: 2},
+					Kind:   lexer.OperatorAssign,
+					Lexeme: "=",
 				},
 				{
-					Kind:              lexer.LiteralNumber,
-					Lexeme:            "42",
-					LeadingWhitespace: "  ",
-					Location:          lexer.SourceLocation{Line: 0, Column: 5},
+					Kind:   lexer.LiteralNumber,
+					Lexeme: "42",
 				},
 				{
-					Kind:              lexer.NewLine,
-					Lexeme:            "\n",
-					LeadingWhitespace: "",
-					Location:          lexer.SourceLocation{Line: 0, Column: 7},
+					Kind:   lexer.NewLine,
+					Lexeme: "\n",
 				},
 			},
 			wantErr: false,
+		},
+		{
+			name:  "call",
+			input: "test(13)",
+			want: []lexer.Token{
+				{Kind: lexer.LiteralIdentifier, Lexeme: "test"},
+				{Kind: lexer.SymbolLeftParen, Lexeme: "("},
+				{Kind: lexer.LiteralNumber, Lexeme: "13"},
+				{Kind: lexer.SymbolRightParen, Lexeme: ")"},
+			},
+		},
+		{
+			name:  "call assign",
+			input: "a = test(13)",
+			want: []lexer.Token{
+				{Kind: lexer.LiteralIdentifier, Lexeme: "a"},
+				{Kind: lexer.OperatorAssign, Lexeme: "="},
+				{Kind: lexer.LiteralIdentifier, Lexeme: "test"},
+				{Kind: lexer.SymbolLeftParen, Lexeme: "("},
+				{Kind: lexer.LiteralNumber, Lexeme: "13"},
+				{Kind: lexer.SymbolRightParen, Lexeme: ")"},
+			},
 		},
 	}
 	for _, tt := range tests {
@@ -73,30 +85,15 @@ func TestLexer_NextToken(t *testing.T) {
 			l := lexer.NewLexer(tt.input)
 
 			var got []lexer.Token
-			var gotErr error = nil
 			for {
-				t, e := l.NextToken()
-				if e != nil {
-					gotErr = e
-					break
-				}
+				t := l.NextToken()
 				if t.Kind == lexer.EOF {
 					break
 				}
-				got = append(got, *t)
+				got = append(got, t)
 			}
 
-			if gotErr != nil {
-				if !tt.wantErr {
-					t.Errorf("NextToken() failed: %v", gotErr)
-				}
-				return
-			}
-			if tt.wantErr {
-				t.Fatal("NextToken() succeeded unexpectedly")
-			}
-
-			lexCmp := cmpopts.IgnoreFields(lexer.Token{}, "Location", "LeadingWhitespace")
+			lexCmp := cmpopts.IgnoreFields(lexer.Token{}, "Range", "LeadingWhitespace")
 			if diff := cmp.Diff(tt.want, got, lexCmp); diff != "" {
 				t.Errorf("tokens mismatch (-want +got):\n%s", diff)
 			}
