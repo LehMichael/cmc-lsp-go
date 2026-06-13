@@ -10,79 +10,77 @@ import (
 	"strings"
 )
 
-type Lsp struct{}
+type Lsp struct {
+	rd io.Reader
+	wr io.Writer
+}
 
 type header struct {
 	contentLength int64
 	contentType   *string
 }
 
-type countingReader struct {
-	r io.Reader
-	n int64
-}
-
-func (c *countingReader) Read(p []byte) (int, error) {
-	n, err := c.r.Read(p)
-	c.n += int64(n)
-	return n, err
-}
-
-func NewLsp() int {
-	var hd header
-	headerDone := false
-
-	stdin := countingReader{
-		r: os.Stdin,
-		n: 0,
+func NewLsp(rd io.Reader, wr io.Writer) *Lsp {
+	return &Lsp{
+		rd, wr,
 	}
+}
 
-	var content strings.Builder
+func (l *Lsp) Start() int {
+	var hd header
 
-	scanner := bufio.NewScanner(&stdin)
+	scanner := bufio.NewReader(l.rd)
 
-	for scanner.Scan() {
-		s := scanner.Text()
-
-		if headerDone {
-			content.WriteString(s)
-			content.WriteString("\n")
-
-			if stdin.n >= hd.contentLength {
-				if r := handleMessage(content.String()); r >= 0 {
-					return r
-				}
-				headerDone = false
-				content.Reset()
-			}
+	for {
+		s, err := scanner.ReadSlice('\n')
+		if err == io.EOF {
+			break
 		}
+		if err != nil {
+			panic(err.Error())
+		}
+		line := string(s)
+		// fmt.Fprintf(os.Stderr, "csdf?: %d %s\n", utf8.RuneCountInString(line), line)
 
 		switch {
-		case strings.HasPrefix(s, "Content-Length:"):
-			numstring := strings.TrimSpace(string([]rune(s)[15:]))
-			l, e := strconv.ParseInt(numstring, 10, 64)
-			if e != nil {
-				panic(e.Error())
+		case strings.HasPrefix(line, "Content-Length:"):
+			numstring := strings.TrimSpace(strings.TrimPrefix(line, "Content-Length:"))
+			l, err := strconv.ParseInt(numstring, 10, 64)
+			if err != nil {
+				panic(err.Error())
 			}
 			hd.contentLength = l
-		case strings.HasPrefix(s, "Content-Type:"):
-			ct := strings.TrimSpace(string([]rune(s)[13:]))
+		case strings.HasPrefix(line, "Content-Type:"):
+			ct := strings.TrimSpace(strings.TrimPrefix(line, "Content-Type:"))
 			hd.contentType = &ct
-		case s == "":
-			headerDone = true
-			stdin.n = 0
-			fmt.Fprintf(
-				os.Stderr,
-				"header done!\nlength: %v\ntype: %v\n",
-				hd.contentLength,
-				hd.contentType,
-			)
+		case line == "\r\n":
+			// fmt.Fprintf(
+			// 	os.Stderr,
+			// 	"header done!\nlength: %v\ntype: %v\n",
+			// 	hd.contentLength,
+			// 	hd.contentType,
+			// )
+
+			var content strings.Builder
+
+			for i := 0; i < int(hd.contentLength); i++ {
+				r, err := scanner.ReadByte()
+				if err != nil {
+					panic(err.Error())
+				}
+				content.WriteByte(r)
+			}
+
+			// fmt.Fprintf(os.Stderr, "asdf?: \n%s\n", content.String())
+
+			if r := l.handleMessage(content.String()); r >= 0 {
+				return r
+			}
+
+			hd.contentLength = 0
+			hd.contentType = nil
 		}
 
-	}
-
-	if err := scanner.Err(); err != nil {
-		fmt.Fprintln(os.Stderr, "Error reading input:", err)
 	}
 
 	return 1
@@ -90,42 +88,49 @@ func NewLsp() int {
 
 var isShutdown = false
 
-func handleMessage(msg string) int {
-	var message requestMessage
+func (l *Lsp) handleMessage(msg string) int {
+	var message lspMessage
 	if err := json.Unmarshal([]byte(msg), &message); err != nil {
 		panic(err.Error())
 	}
 
-	// if jm, err := json.MarshalIndent(message, "", "  "); err != nil {
-	// 	panic(err.Error())
-	// } else {
-	// 	fmt.Fprintf(os.Stderr, "ffffff: \n%v\n", string(jm))
-	// }
-
-	if isShutdown && message.Method != "exit" {
-		respondEmpty(message.ID, &responseError{
-			Code: InvalidRequest,
-		})
-		return -1
-	}
-
-	switch message.Method {
-	case "shutdown":
-		isShutdown = true
-		respondEmpty(message.ID, nil)
-	case "exit":
-		if isShutdown {
-			return 0
+	if n, ok := message.message.(notificationMessage); ok {
+		if isShutdown && n.Method != "exit" {
+			return -1
 		}
-		return 1
+		switch n.Method {
+		case "exit":
+			if isShutdown {
+				return 0
+			}
+			return 1
+		default:
+			fmt.Fprintf(os.Stderr, "unknown notification method: %s\n", n.Method)
+		}
+	} else if r, ok := message.message.(requestMessage); ok {
+		if isShutdown && n.Method != "exit" {
+			l.respondEmpty(r.ID, &responseError{
+				Code: InvalidRequest,
+			})
+			return -1
+		}
+		switch r.Method {
+		case "shutdown":
+			isShutdown = true
+			l.respondEmpty(r.ID, nil)
+		default:
+			fmt.Fprintf(os.Stderr, "unknown request method: %s\n", r.Method)
+		}
+	} else {
+		fmt.Fprintf(os.Stderr, "responseMessage not implemented")
 	}
 
 	return -1
 }
 
-func respondEmpty(id messageID, err *responseError) {
+func (l *Lsp) respondEmpty(id messageID, err *responseError) {
 	r := responseMessage{
-		message: message{
+		Message: Message{
 			Jsonrpc: "2.0",
 		},
 		ID:     id,
@@ -136,6 +141,7 @@ func respondEmpty(id messageID, err *responseError) {
 	if jm, err := json.MarshalIndent(r, "", "  "); err != nil {
 		panic(err.Error())
 	} else {
-		fmt.Println(string(jm))
+		fmt.Fprintf(l.wr, "Content-Length: %d\r\n\r\n", len(jm))
+		fmt.Fprintln(l.wr, string(jm))
 	}
 }

@@ -7,5 +7,5 @@ import (
 )
 
 func main() {
-	os.Exit(lsp.NewLsp())
+	os.Exit(lsp.NewLsp(os.Stdin, os.Stdout))
 }

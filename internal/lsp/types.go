@@ -4,53 +4,121 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 )
 
-type message struct {
+type Message struct {
 	Jsonrpc string `json:"jsonrpc"`
 }
 
+type LspMessageKind interface {
+	isLspMessageKind()
+}
+
+type lspMessage struct {
+	message LspMessageKind
+}
+
+func (msg *lspMessage) UnmarshalJSON(data []byte) error {
+	var raw struct {
+		ID     *json.RawMessage `json:"id"`
+		Method *string          `json:"method"`
+	}
+
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+
+	if raw.ID == nil && raw.Method != nil {
+		// notification
+		var n notificationMessage
+		if err := json.Unmarshal(data, &n); err != nil {
+			return err
+		}
+		msg.message = n
+	} else if raw.ID != nil && raw.Method != nil {
+		// request
+		var r requestMessage
+		if err := json.Unmarshal(data, &r); err != nil {
+			return err
+		}
+		msg.message = r
+	} else if raw.ID != nil && raw.Method == nil {
+		// response
+		var r responseMessage
+		if err := json.Unmarshal(data, &r); err != nil {
+			return err
+		}
+		msg.message = r
+	} else {
+		return errors.New("invalid format")
+	}
+
+	return nil
+}
+
 type responseMessage struct {
-	message
-	/**
-	 * The request id.
-	 */
-	ID messageID `json:"id,omitempty"`
+	Message
+	ID     messageID      `json:"id"`
+	Result lSPAny         `json:"result,omitempty"`
+	Error  *responseError `json:"error,omitempty"`
+}
 
-	/**
-	 * The result of a request. This member is REQUIRED on success.
-	 * This member MUST NOT exist if there was an error invoking the method.
-	 */
-	Result lSPAny `json:"result,omitempty"`
+func (responseMessage) isLspMessageKind() {}
 
-	/**
-	 * The error object in case a request fails.
-	 */
-	Error *responseError `json:"error,omitempty"`
+func (msg *responseMessage) UnmarshalJSON(data []byte) error {
+	var raw struct {
+		Message
+		ID     json.RawMessage `json:"id"`
+		Result lSPAny          `json:"result"`
+		Error  *responseError  `json:"error"`
+	}
+
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+
+	rawId := strings.TrimSpace(string(raw.ID))
+	if len(rawId) == 0 {
+		return fmt.Errorf("invalid empty id")
+	}
+
+	switch rawId[0] {
+	case '"':
+		var s string
+		if err := json.Unmarshal(raw.ID, &s); err != nil {
+			return err
+		}
+		msg.ID = stringMessageID(s)
+	case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '-':
+		var i int
+		if err := json.Unmarshal(raw.ID, &i); err != nil {
+			return err
+		}
+		msg.ID = intMessageID(i)
+	default:
+		return fmt.Errorf("expected string or number, got: %s", raw.ID)
+	}
+
+	msg.Jsonrpc = raw.Jsonrpc
+	msg.Result = raw.Result
+	msg.Error = raw.Error
+
+	return nil
 }
 
 type requestMessage struct {
-	message
+	Message
 	ID     messageID `json:"id"`
 	Method string    `json:"method"`
 	Params params    `json:"params,omitempty"`
 }
 
-type messageID interface {
-	isMessageID()
-}
-
-type intMessageID int
-
-func (intMessageID) isMessageID() {}
-
-type stringMessageID string
-
-func (stringMessageID) isMessageID() {}
+func (requestMessage) isLspMessageKind() {}
 
 func (msg *requestMessage) UnmarshalJSON(data []byte) error {
 	var raw struct {
-		message
+		Message
 		ID     json.RawMessage `json:"id"`
 		Method string          `json:"method"`
 		Params json.RawMessage `json:"params"`
@@ -59,27 +127,26 @@ func (msg *requestMessage) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	if len(raw.ID) > 0 {
-		switch raw.ID[0] {
-		case '"':
-			var s string
-			if err := json.Unmarshal(raw.ID, &s); err != nil {
-				return err
-			}
-			msg.ID = stringMessageID(s)
-		case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '-':
-			var i int
-			if err := json.Unmarshal(raw.ID, &i); err != nil {
-				return err
-			}
-			msg.ID = intMessageID(i)
-		case 'n':
-			msg.ID = nil
-		default:
-			return fmt.Errorf("expected string or number, got: %s", raw.ID)
+	rawId := strings.TrimSpace(string(raw.ID))
+	if len(rawId) == 0 {
+		return fmt.Errorf("invalid empty id")
+	}
+
+	switch rawId[0] {
+	case '"':
+		var s string
+		if err := json.Unmarshal(raw.ID, &s); err != nil {
+			return err
 		}
-	} else {
-		msg.ID = nil
+		msg.ID = stringMessageID(s)
+	case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '-':
+		var i int
+		if err := json.Unmarshal(raw.ID, &i); err != nil {
+			return err
+		}
+		msg.ID = intMessageID(i)
+	default:
+		return fmt.Errorf("expected string or number, got: %s", raw.ID)
 	}
 
 	msg.Jsonrpc = raw.Jsonrpc
@@ -94,6 +161,36 @@ func (msg *requestMessage) UnmarshalJSON(data []byte) error {
 		}
 		msg.Params = i
 	case "shutdown":
+	default:
+		return errors.New("unknown method")
+	}
+
+	return nil
+}
+
+type notificationMessage struct {
+	Message
+	Method string `json:"method"`
+	Params params `json:"params,omitempty"`
+}
+
+func (notificationMessage) isLspMessageKind() {}
+
+func (msg *notificationMessage) UnmarshalJSON(data []byte) error {
+	var raw struct {
+		Message
+		Method string          `json:"method"`
+		Params json.RawMessage `json:"params"`
+	}
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+
+	msg.Jsonrpc = raw.Jsonrpc
+	msg.Method = raw.Method
+	msg.Params = nil
+
+	switch msg.Method {
 	case "exit":
 	default:
 		return errors.New("unknown method")
@@ -101,6 +198,18 @@ func (msg *requestMessage) UnmarshalJSON(data []byte) error {
 
 	return nil
 }
+
+type messageID interface {
+	isMessageID()
+}
+
+type intMessageID int
+
+func (intMessageID) isMessageID() {}
+
+type stringMessageID string
+
+func (stringMessageID) isMessageID() {}
 
 type params interface {
 	isParams()
