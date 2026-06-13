@@ -17,15 +17,16 @@ type Symbol struct {
 }
 
 type Parsed struct {
-	Ast  parser.Ast
-	Diag []diag.Diagnostic
+	Ast   parser.Ast
+	Token []lexer.Token
+	Diag  []diag.Diagnostic
 }
 
 func Analyze(root string, ws *workspace.Overlay) ([]Symbol, []diag.Diagnostic) {
 	parsed := resolve(root, ws)
 	var di []diag.Diagnostic
 	var sym []Symbol
-	seen := make(map[string]parser.SectionSwitchKind)
+	seen := make(map[string]*parser.SectionSwitchKind)
 
 	var walk func(string, *parser.SectionSwitchKind, map[string]struct{}) *parser.SectionSwitchKind
 	walk = func(u string, ssw *parser.SectionSwitchKind, stack map[string]struct{}) *parser.SectionSwitchKind {
@@ -36,6 +37,7 @@ func Analyze(root string, ws *workspace.Overlay) ([]Symbol, []diag.Diagnostic) {
 		di = append(di, p.Diag...)
 
 		basePath := filepath.Dir(u)
+		fileType := strings.ToLower(filepath.Ext(u))
 
 		for _, s := range p.Ast {
 			if pp, ok := s.Kind.(parser.PreprocessorStatement); ok {
@@ -43,18 +45,19 @@ func Analyze(root string, ws *workspace.Overlay) ([]Symbol, []diag.Diagnostic) {
 					// remove quotes
 					includePath := strings.Trim(inc.Path, "\"")
 					path := filepath.Join(basePath, includePath)
-					// is file is already on the stack, addpend diag and continue
+					// is file is already on the stack, append diag and continue
 					if _, ok := stack[path]; ok {
 						di = append(di, diag.Diagnostic{
-							Kind:  diag.CircularInclude,
-							Range: s.Range,
+							Kind:     diag.CircularInclude,
+							Range:    s.Range,
+							Severity: diag.Error,
 						})
 						continue
 					}
 
 					// already parsed this file, just push the section
 					if s, ok := seen[path]; ok {
-						ssw = &s
+						ssw = s
 						continue
 					}
 
@@ -64,7 +67,7 @@ func Analyze(root string, ws *workspace.Overlay) ([]Symbol, []diag.Diagnostic) {
 					}
 
 					ssw = walk(path, ssw, maps.Clone(stack))
-					seen[path] = *ssw
+					seen[path] = ssw
 				}
 			} else if sec, ok := s.Kind.(parser.SectionSwitch); ok {
 				ssw = &sec.Kind
@@ -73,12 +76,7 @@ func Analyze(root string, ws *workspace.Overlay) ([]Symbol, []diag.Diagnostic) {
 					Identifier: as.Target,
 					Section:    ssw,
 				})
-				if i, ok := as.Value.Kind.(parser.IdentifierExpression); ok {
-					sym = append(sym, Symbol{
-						Identifier: i,
-						Section:    ssw,
-					})
-				}
+				sym = append(sym, resolveExpression(as.Value.Kind, ssw)...)
 			} else if ds, ok := s.Kind.(parser.DeleteStatement); ok {
 				sym = append(sym, Symbol{
 					Identifier: ds.Identifier,
@@ -92,19 +90,15 @@ func Analyze(root string, ws *workspace.Overlay) ([]Symbol, []diag.Diagnostic) {
 					Identifier: *fs.Identifier,
 					Section:    ssw,
 				})
-			} else if cs, ok := s.Kind.(parser.CallStatement); ok {
-				sym = append(sym, Symbol{
-					Identifier: cs.Identifier,
-					Section:    ssw,
-				})
-				for _, arg := range cs.Parameters {
-					if i, ok := arg.Kind.(parser.IdentifierExpression); ok {
-						sym = append(sym, Symbol{
-							Identifier: i,
-							Section:    ssw,
-						})
-					}
+				if fileType != "uplib" {
+					di = append(di, diag.Diagnostic{
+						Kind:     diag.FunctionInScript,
+						Range:    s.Range,
+						Severity: diag.Error,
+					})
 				}
+			} else if cs, ok := s.Kind.(parser.CallStatement); ok {
+				sym = append(sym, resolveExpression(parser.CallExpression(cs), ssw)...)
 			}
 		}
 
@@ -114,6 +108,34 @@ func Analyze(root string, ws *workspace.Overlay) ([]Symbol, []diag.Diagnostic) {
 	walk(root, nil, make(map[string]struct{}))
 
 	return sym, di
+}
+
+func resolveExpression(ex parser.ExpressionKind, ssw *parser.SectionSwitchKind) []Symbol {
+	if ge, ok := ex.(parser.GroupedExpression); ok {
+		return resolveExpression(ge.Expression.Kind, ssw)
+	} else if pe, ok := ex.(parser.PrefixedExpression); ok {
+		return resolveExpression(pe.Expression.Kind, ssw)
+	} else if be, ok := ex.(parser.BinaryExpression); ok {
+		ret := resolveExpression(be.Left.Kind, ssw)
+		ret = append(ret, resolveExpression(be.Right.Kind, ssw)...)
+		return ret
+	} else if ie, ok := ex.(parser.IdentifierExpression); ok {
+		return []Symbol{{
+			Identifier: ie,
+			Section:    ssw,
+		}}
+	} else if ce, ok := ex.(parser.CallExpression); ok {
+		ret := []Symbol{{
+			Identifier: ce.Identifier,
+			Section:    ssw,
+		}}
+		for _, arg := range ce.Parameters {
+			ret = append(ret, resolveExpression(arg.Kind, ssw)...)
+		}
+		return ret
+	}
+
+	return []Symbol{}
 }
 
 func resolve(root string, ws *workspace.Overlay) map[string]Parsed {
@@ -145,15 +167,16 @@ func resolve(root string, ws *workspace.Overlay) map[string]Parsed {
 					path := filepath.Join(basePath, includePath)
 					if ok := visit(path); !ok {
 						di = append(di, diag.Diagnostic{
-							Kind:  diag.MissingInclude,
-							Range: s.Range,
+							Kind:     diag.MissingInclude,
+							Range:    s.Range,
+							Severity: diag.Error,
 						})
 					}
 				}
 			}
 		}
 
-		results[u] = Parsed{ast, di}
+		results[u] = Parsed{ast, tokens, di}
 
 		return true
 	}
