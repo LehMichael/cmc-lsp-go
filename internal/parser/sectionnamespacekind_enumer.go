@@ -8,11 +8,11 @@ import (
 	"strings"
 )
 
-const _SectionNamespaceKindName = "UnqualifiedChandataPsNc"
+const _SectionNamespaceKindName = "UnqualifiedChandataPsNcBd"
 
-var _SectionNamespaceKindIndex = [...]uint8{0, 11, 19, 21, 23}
+var _SectionNamespaceKindIndex = [...]uint8{0, 11, 19, 21, 23, 25}
 
-const _SectionNamespaceKindLowerName = "unqualifiedchandatapsnc"
+const _SectionNamespaceKindLowerName = "unqualifiedchandatapsncbd"
 
 func (i SectionNamespaceKind) String() string {
 	if i < 0 || i >= SectionNamespaceKind(len(_SectionNamespaceKindIndex)-1) {
@@ -29,9 +29,10 @@ func _SectionNamespaceKindNoOp() {
 	_ = x[Chandata-(1)]
 	_ = x[Ps-(2)]
 	_ = x[Nc-(3)]
+	_ = x[Bd-(4)]
 }
 
-var _SectionNamespaceKindValues = []SectionNamespaceKind{Unqualified, Chandata, Ps, Nc}
+var _SectionNamespaceKindValues = []SectionNamespaceKind{Unqualified, Chandata, Ps, Nc, Bd}
 
 var _SectionNamespaceKindNameToValueMap = map[string]SectionNamespaceKind{
 	_SectionNamespaceKindName[0:11]:       Unqualified,
@@ -42,6 +43,8 @@ var _SectionNamespaceKindNameToValueMap = map[string]SectionNamespaceKind{
 	_SectionNamespaceKindLowerName[19:21]: Ps,
 	_SectionNamespaceKindName[21:23]:      Nc,
 	_SectionNamespaceKindLowerName[21:23]: Nc,
+	_SectionNamespaceKindName[23:25]:      Bd,
+	_SectionNamespaceKindLowerName[23:25]: Bd,
 }
 
 var _SectionNamespaceKindNames = []string{
@@ -49,6 +52,7 @@ var _SectionNamespaceKindNames = []string{
 	_SectionNamespaceKindName[11:19],
 	_SectionNamespaceKindName[19:21],
 	_SectionNamespaceKindName[21:23],
+	_SectionNamespaceKindName[23:25],
 }
 
 // SectionNamespaceKindString retrieves an enum value from the enum constants string name.

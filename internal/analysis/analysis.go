@@ -44,7 +44,7 @@ func Analyze(root string, ws *workspace.Overlay) ([]Symbol, []diag.Diagnostic) {
 				if inc, ok := pp.Kind.(parser.IncludePpStatement); ok {
 					// remove quotes
 					includePath := strings.Trim(inc.Path, "\"")
-					path := filepath.Join(basePath, includePath)
+					path := includeFilePath(basePath, includePath)
 					// is file is already on the stack, append diag and continue
 					if _, ok := stack[path]; ok {
 						di = append(di, diag.Diagnostic{
@@ -90,7 +90,7 @@ func Analyze(root string, ws *workspace.Overlay) ([]Symbol, []diag.Diagnostic) {
 					Identifier: *fs.Identifier,
 					Section:    ssw,
 				})
-				if fileType != "uplib" {
+				if fileType != ".uplib" {
 					di = append(di, diag.Diagnostic{
 						Kind:     diag.FunctionInScript,
 						Range:    s.Range,
@@ -164,7 +164,7 @@ func resolve(root string, ws *workspace.Overlay) map[string]Parsed {
 				if inc, ok := pp.Kind.(parser.IncludePpStatement); ok {
 					// remove quotes
 					includePath := strings.Trim(inc.Path, "\"")
-					path := filepath.Join(basePath, includePath)
+					path := includeFilePath(basePath, includePath)
 					if ok := visit(path); !ok {
 						di = append(di, diag.Diagnostic{
 							Kind:     diag.MissingInclude,
@@ -182,4 +182,11 @@ func resolve(root string, ws *workspace.Overlay) map[string]Parsed {
 	}
 	visit(root)
 	return results
+}
+
+func includeFilePath(basePath, includePath string) string {
+	// CMC projects are authored on Windows, so relative includes commonly use
+	// backslashes even when the language server runs on another platform.
+	includePath = filepath.FromSlash(strings.ReplaceAll(includePath, "\\", "/"))
+	return filepath.Clean(filepath.Join(basePath, includePath))
 }

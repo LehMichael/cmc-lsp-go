@@ -64,7 +64,7 @@
           "Range": {
             "Start": {
               "Line": 1,
-              "Column": 24
+              "Column": 10
             },
             "End": {
               "Line": 1,
@@ -81,7 +81,7 @@
         "Range": {
           "Start": {
             "Line": 1,
-            "Column": 24
+            "Column": 10
           },
           "End": {
             "Line": 1,
@@ -166,7 +166,7 @@
           "Range": {
             "Start": {
               "Line": 2,
-              "Column": 18
+              "Column": 11
             },
             "End": {
               "Line": 2,
@@ -181,7 +181,7 @@
         "Range": {
           "Start": {
             "Line": 2,
-            "Column": 18
+            "Column": 11
           },
           "End": {
             "Line": 2,

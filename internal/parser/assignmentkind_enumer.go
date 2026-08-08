@@ -8,11 +8,11 @@ import (
 	"strings"
 )
 
-const _AssignmentKindName = "AssignAddAssignSubtractAssignMultiplyAssignDivideAssignAndAssignOrAssignAssignIfBlank"
+const _AssignmentKindName = "AssignAddAssignSubtractAssignMultiplyAssignDivideAssignAndAssignOrAssignAssignIfBlankAssignRaw"
 
-var _AssignmentKindIndex = [...]uint8{0, 6, 15, 29, 43, 55, 64, 72, 85}
+var _AssignmentKindIndex = [...]uint8{0, 6, 15, 29, 43, 55, 64, 72, 85, 94}
 
-const _AssignmentKindLowerName = "assignaddassignsubtractassignmultiplyassigndivideassignandassignorassignassignifblank"
+const _AssignmentKindLowerName = "assignaddassignsubtractassignmultiplyassigndivideassignandassignorassignassignifblankassignraw"
 
 func (i AssignmentKind) String() string {
 	if i < 0 || i >= AssignmentKind(len(_AssignmentKindIndex)-1) {
@@ -33,9 +33,10 @@ func _AssignmentKindNoOp() {
 	_ = x[AndAssign-(5)]
 	_ = x[OrAssign-(6)]
 	_ = x[AssignIfBlank-(7)]
+	_ = x[AssignRaw-(8)]
 }
 
-var _AssignmentKindValues = []AssignmentKind{Assign, AddAssign, SubtractAssign, MultiplyAssign, DivideAssign, AndAssign, OrAssign, AssignIfBlank}
+var _AssignmentKindValues = []AssignmentKind{Assign, AddAssign, SubtractAssign, MultiplyAssign, DivideAssign, AndAssign, OrAssign, AssignIfBlank, AssignRaw}
 
 var _AssignmentKindNameToValueMap = map[string]AssignmentKind{
 	_AssignmentKindName[0:6]:        Assign,
@@ -54,6 +55,8 @@ var _AssignmentKindNameToValueMap = map[string]AssignmentKind{
 	_AssignmentKindLowerName[64:72]: OrAssign,
 	_AssignmentKindName[72:85]:      AssignIfBlank,
 	_AssignmentKindLowerName[72:85]: AssignIfBlank,
+	_AssignmentKindName[85:94]:      AssignRaw,
+	_AssignmentKindLowerName[85:94]: AssignRaw,
 }
 
 var _AssignmentKindNames = []string{
@@ -65,6 +68,7 @@ var _AssignmentKindNames = []string{
 	_AssignmentKindName[55:64],
 	_AssignmentKindName[64:72],
 	_AssignmentKindName[72:85],
+	_AssignmentKindName[85:94],
 }
 
 // AssignmentKindString retrieves an enum value from the enum constants string name.

@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+
+	"github.com/lehmichael/cmc-lsp-go/internal/textencoding"
 )
 
 type Overlay struct {
@@ -84,8 +86,29 @@ func (o *Overlay) Read(path string) (string, error) {
 	if d, err := os.ReadFile(path); err != nil {
 		return "", err
 	} else {
-		return string(d), nil
+		text, _ := textencoding.Decode(d)
+		return text, nil
 	}
+}
+
+func (o *Overlay) ReadURI(uri string) (string, error) {
+	path, err := uriToPath(uri)
+	if err != nil {
+		return "", err
+	}
+	return o.Read(path)
+}
+
+func URIToPath(uri string) (string, error) {
+	return uriToPath(uri)
+}
+
+func PathToURI(path string) string {
+	path = filepath.Clean(path)
+	if len(path) >= 2 && path[1] == ':' {
+		path = "/" + filepath.ToSlash(path)
+	}
+	return (&url.URL{Scheme: "file", Path: filepath.ToSlash(path)}).String()
 }
 
 func uriToPath(uri string) (string, error) {

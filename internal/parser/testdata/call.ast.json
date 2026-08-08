@@ -86,7 +86,7 @@
           },
           "End": {
             "Line": 0,
-            "Column": 21
+            "Column": 20
           }
         }
       }
@@ -98,7 +98,7 @@
       },
       "End": {
         "Line": 0,
-        "Column": 21
+        "Column": 20
       }
     }
   },
@@ -198,7 +198,7 @@
       },
       "End": {
         "Line": 1,
-        "Column": 16
+        "Column": 15
       }
     }
   },

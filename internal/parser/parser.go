@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
-	"unicode/utf8"
 
 	"github.com/lehmichael/cmc-lsp-go/internal/diag"
 	l "github.com/lehmichael/cmc-lsp-go/internal/lexer"
@@ -25,6 +24,9 @@ func Parse(tokens []l.Token, diagnostics []diag.Diagnostic) (Ast, []diag.Diagnos
 	for p.currentToken().Kind != l.EOF {
 		// fmt.Printf("a: %v\n", p.currentToken().Kind.String())
 		comments := p.parseCommentBlock()
+		if p.currentToken().Kind == l.EOF {
+			break
+		}
 		statement := p.parseStatement(comments)
 		statements = append(statements, statement)
 	}
@@ -60,7 +62,8 @@ func (p *parser) expect(kinds []l.TokenKind) *l.Token {
 
 func (p *parser) expectAndAdvance(kinds []l.TokenKind) *l.Token {
 	if p.expect(kinds) != nil {
-		token := p.advance()
+		token := p.currentToken()
+		_ = p.advance()
 		return &token
 	}
 
@@ -76,10 +79,20 @@ func (p *parser) parseStatement(leadingComments []string) Statement {
 		return p.parseIfBlock(leadingComments)
 	case l.KeywordWhile:
 		return p.parseWhileBlock(leadingComments)
-	case l.Section, l.KeywordNamespaceChan, l.KeywordNamespaceNc, l.KeywordNamespacePs:
+	case l.Section, l.KeywordNamespaceChan:
 		return p.parseSectionStatement(leadingComments)
+	case l.KeywordNamespaceNc, l.KeywordNamespacePs, l.KeywordNamespaceBd:
+		return p.parseNamespacedStatement(leadingComments)
+	case l.LiteralBlockNumber:
+		_ = p.advance()
+		if p.currentToken().Kind == l.LiteralIdentifier || p.currentToken().Kind == l.SymbolDollarParen {
+			return p.parseIdentifierStatement(leadingComments)
+		}
+		return p.parseInvalidStatement(leadingComments)
 	case l.LiteralIdentifier:
 		return p.parseIdentifierStatement(leadingComments)
+	case l.KeywordReturn:
+		return p.parseReturnCall(leadingComments)
 	case l.PreprocessorInclude:
 		return p.parsePreprocessor(leadingComments)
 	case l.KeywordProc, l.KeywordFunc:
@@ -94,6 +107,19 @@ func (p *parser) parseStatement(leadingComments []string) Statement {
 	}
 
 	return p.parseInvalidStatement(leadingComments)
+}
+
+func (p *parser) parseReturnCall(leadingComments []string) Statement {
+	token := p.currentToken()
+	identifier := IdentifierExpression{
+		Segments: []IdentifierSegment{{Parts: []IdentifierPart{LiteralIdentifier(token.Lexeme)}}},
+		Range:    token.Range,
+	}
+	_ = p.advance()
+	if p.currentToken().Kind != l.SymbolLeftParen {
+		return p.parseInvalidStatement(leadingComments)
+	}
+	return p.parseCallStatement(identifier, leadingComments)
 }
 
 func (p *parser) parseFunctionStatement(leadingComments []string) Statement {
@@ -139,23 +165,26 @@ func (p *parser) parseFunctionStatement(leadingComments []string) Statement {
 	arcCount := 0
 
 	if !invalidParams {
-		// 	token := p.currentToken()
-	loop:
-		for {
-			if t := p.expectAndAdvance([]l.TokenKind{l.SymbolDollar}); t == nil {
-				break
-			}
-			arcCount++
-			switch p.currentToken().Kind {
-			case l.SymbolComma:
-				_ = p.advance()
-			case l.SymbolRightParen:
-				_ = p.advance()
-				break loop
-			default:
-				arcCount = 0
-				invalidParams = true
-				break loop
+		if p.currentToken().Kind == l.SymbolRightParen {
+			_ = p.advance()
+		} else {
+		loop:
+			for {
+				if t := p.expectAndAdvance([]l.TokenKind{l.SymbolDollar}); t == nil {
+					break
+				}
+				arcCount++
+				switch p.currentToken().Kind {
+				case l.SymbolComma:
+					_ = p.advance()
+				case l.SymbolRightParen:
+					_ = p.advance()
+					break loop
+				default:
+					arcCount = 0
+					invalidParams = true
+					break loop
+				}
 			}
 		}
 	}
@@ -260,9 +289,15 @@ func (p *parser) parsePreprocessor(leadingComments []string) Statement {
 			path = t.Lexeme
 			_ = p.advance()
 		} else {
-			tokens := p.recoverFromError(diag.UnexpectedToken, p.Pos, []l.TokenKind{})
-			invalidToken = &tokens[0]
-			endToken = tokens[0]
+			token := p.currentToken()
+			invalidToken = &token
+			endToken = token
+			p.Diagnostics = append(p.Diagnostics, diag.Diagnostic{
+				Kind: diag.UnexpectedToken, Range: token.Range, Severity: diag.Error,
+			})
+			if token.Kind != l.EOF && token.Kind != l.NewLine && token.Kind != l.Comment {
+				_ = p.advance()
+			}
 		}
 
 		kind = IncludePpStatement{
@@ -319,6 +354,11 @@ func (p *parser) parseEndComment() ([]l.Token, *string) {
 
 func (p *parser) parseInvalidStatement(leadingComments []string) Statement {
 	tokens, trailingComment := p.parseEndComment()
+	if len(tokens) == 0 {
+		token := p.currentToken()
+		p.Diagnostics = append(p.Diagnostics, diag.Diagnostic{Kind: diag.InvaliStatement, Range: token.Range, Severity: diag.Error})
+		return Statement{Kind: InvalidStatement{}, Range: token.Range, LeadingComments: leadingComments, TrailingComment: trailingComment}
+	}
 
 	return Statement{
 		Kind:            InvalidStatement(tokens),
@@ -338,7 +378,22 @@ func (p *parser) parseAssignment(
 	}
 	_ = p.advance()
 
-	value := p.parseExpression(0)
+	var value Expression
+	if *op == AssignRaw {
+		start := p.currentToken()
+		var raw strings.Builder
+		end := start
+		for p.currentToken().Kind != l.NewLine && p.currentToken().Kind != l.Comment && p.currentToken().Kind != l.EOF {
+			t := p.currentToken()
+			raw.WriteString(t.LeadingWhitespace)
+			raw.WriteString(t.Lexeme)
+			end = t
+			_ = p.advance()
+		}
+		value = Expression{Kind: RawLiteral(strings.TrimSpace(raw.String())), Range: source.MergeRange(start.Range, end.Range)}
+	} else {
+		value = p.parseExpression(0)
+	}
 
 	invalidAfter, trailingComment := p.parseEndComment()
 
@@ -400,24 +455,26 @@ func (p *parser) parseCallExpression(identifier IdentifierExpression) Expression
 	if startToken.Kind != l.SymbolLeftParen {
 		panic("must be called with SymbolLeftParen token")
 	}
-	nextToken := p.advance()
+	_ = p.advance()
 
 	var parameters []Expression
 
-	for {
-		parameters = append(parameters, p.parseExpression(0))
+	if p.currentToken().Kind != l.SymbolRightParen {
+		for {
+			parameters = append(parameters, p.parseExpression(0))
 
-		nextToken = p.currentToken()
-		if nextToken.Kind == l.SymbolComma {
-			nextToken = p.advance()
-		} else {
+			if p.currentToken().Kind == l.SymbolComma {
+				_ = p.advance()
+				continue
+			}
 			break
 		}
 	}
 
 	missingClosingParen := false
 	var invalidArgs []l.Token
-	if t := p.expectAndAdvance([]l.TokenKind{l.SymbolRightParen}); t == nil {
+	endToken := startToken
+	if t := p.expect([]l.TokenKind{l.SymbolRightParen}); t == nil {
 		missingClosingParen = true
 		invalidArgs = p.recoverFromError(
 			diag.UnexpectedToken,
@@ -425,11 +482,13 @@ func (p *parser) parseCallExpression(identifier IdentifierExpression) Expression
 			[]l.TokenKind{l.SymbolRightParen, l.NewLine, l.EOF},
 		)
 		if p.currentToken().Kind == l.SymbolRightParen {
+			endToken = p.currentToken()
 			_ = p.advance()
 		}
+	} else {
+		endToken = *t
+		_ = p.advance()
 	}
-
-	endToken := p.currentToken()
 
 	return Expression{
 		Kind: CallExpression{
@@ -482,6 +541,8 @@ func tokenToAssignmentKind(token l.Token) *AssignmentKind {
 		assignmentKind = OrAssign
 	case l.OperatorAssignIfBlank:
 		assignmentKind = AssignIfBlank
+	case l.OperatorAssignRaw:
+		assignmentKind = AssignRaw
 	default:
 		return nil
 	}
@@ -492,7 +553,7 @@ func (p *parser) parseSection() SectionSwitchKind {
 	startToken := p.currentToken()
 	if startToken.Kind != l.KeywordNamespaceNc && startToken.Kind != l.KeywordNamespaceChan &&
 		startToken.Kind != l.KeywordNamespacePs &&
-		startToken.Kind != l.Section {
+		startToken.Kind != l.KeywordNamespaceBd && startToken.Kind != l.Section {
 		panic("must be called with section token")
 	}
 	startPos := p.Pos
@@ -508,6 +569,9 @@ func (p *parser) parseSection() SectionSwitchKind {
 	case l.KeywordNamespacePs:
 		ns = Ps
 		_ = p.advance()
+	case l.KeywordNamespaceBd:
+		ns = Bd
+		_ = p.advance()
 	default:
 		ns = Unqualified
 	}
@@ -515,8 +579,11 @@ func (p *parser) parseSection() SectionSwitchKind {
 	lexeme := p.currentToken().Lexeme
 	_ = p.advance()
 
+	upper := strings.ToUpper(lexeme)
 	switch {
-	case strings.HasPrefix(lexeme, "[B"):
+	case strings.Contains(lexeme, "$("):
+		return DynamicSection(lexeme)
+	case strings.HasPrefix(upper, "[B"):
 		if s, err := parseDriveSection(lexeme, ns); err == nil {
 			return s
 		} else {
@@ -527,7 +594,7 @@ func (p *parser) parseSection() SectionSwitchKind {
 			)
 			return InvalidSection(i)
 		}
-	case strings.HasPrefix(lexeme, "[C"):
+	case strings.HasPrefix(upper, "[C"):
 		if s, err := parseChanSection(lexeme, ns); err == nil {
 			return s
 		} else {
@@ -547,12 +614,42 @@ func (p *parser) parseSection() SectionSwitchKind {
 			)
 			return InvalidSection(i)
 		}
+	case strings.EqualFold(lexeme, "[SL]"):
+		return DisplaySection{Name: "SL", Namespace: ns}
 	default:
 		i := p.recoverFromError(
 			diag.SectionFormatUnrecogniced, startPos,
 			[]l.TokenKind{l.NewLine, l.EOF, l.Comment},
 		)
 		return InvalidSection(i)
+	}
+}
+
+func (p *parser) parseNamespacedStatement(leadingComments []string) Statement {
+	startToken := p.currentToken()
+	section := p.parseSection()
+	if p.currentToken().Kind == l.SymbolDot {
+		_ = p.advance()
+	}
+	if p.currentToken().Kind == l.LiteralIdentifier || p.currentToken().Kind == l.SymbolDollarParen {
+		identifier := p.parseIdentifier(&section)
+		identifier.Range.Start = startToken.Range.Start
+		switch {
+		case p.currentToken().Kind == l.SymbolLeftParen:
+			return p.parseCallStatement(identifier, leadingComments)
+		case p.currentToken().Kind == l.OperatorDelete:
+			return p.parseDeleteStatement(identifier, leadingComments)
+		case tokenToAssignmentKind(p.currentToken()) != nil:
+			return p.parseAssignment(identifier, leadingComments)
+		}
+	}
+
+	invalidEndTokens, trailingComment := p.parseEndComment()
+	return Statement{
+		Kind:            SectionSwitch{Kind: section, InvalidEndTokens: invalidEndTokens},
+		LeadingComments: leadingComments,
+		TrailingComment: trailingComment,
+		Range:           source.MergeRange(startToken.Range, p.currentToken().Range),
 	}
 }
 
@@ -576,10 +673,17 @@ func (p *parser) parseSectionStatement(leadingComments []string) Statement {
 
 func parseChandataSection(section string, ns SectionNamespaceKind) (*ChannelSection, error) {
 	// format:(<chan>)
-	trimmed := string([]rune(section)[1 : utf8.RuneCountInString(section)-1])
+	runes := []rune(section)
+	if len(runes) < 3 || runes[0] != '(' || runes[len(runes)-1] != ')' {
+		return nil, errors.New("invalid CHANDATA section")
+	}
+	trimmed := string(runes[1 : len(runes)-1])
 	channel, err := strconv.ParseUint(trimmed, 10, 8)
 	if err != nil {
 		return nil, err
+	}
+	if channel < 1 || channel > 10 {
+		return nil, errors.New("channel number must be between 1 and 10")
 	}
 	c := ChannelSection{
 		Channo:    uint8(channel),
@@ -591,10 +695,17 @@ func parseChandataSection(section string, ns SectionNamespaceKind) (*ChannelSect
 
 func parseChanSection(section string, ns SectionNamespaceKind) (*ChannelSection, error) {
 	// format: [C<chan>]
-	trimmed := string([]rune(section)[2 : utf8.RuneCountInString(section)-1])
+	runes := []rune(section)
+	if len(runes) < 4 || runes[0] != '[' || unicode.ToUpper(runes[1]) != 'C' || runes[len(runes)-1] != ']' {
+		return nil, errors.New("invalid channel section")
+	}
+	trimmed := string(runes[2 : len(runes)-1])
 	channel, err := strconv.ParseUint(trimmed, 10, 8)
 	if err != nil {
 		return nil, err
+	}
+	if channel < 1 || channel > 10 {
+		return nil, errors.New("channel number must be between 1 and 10")
 	}
 	c := ChannelSection{
 		Channo:    uint8(channel),
@@ -606,8 +717,15 @@ func parseChanSection(section string, ns SectionNamespaceKind) (*ChannelSection,
 
 func parseDriveSection(section string, ns SectionNamespaceKind) (*DriveSection, error) {
 	// format: [B<bus>_S<slave>_PS<do>]
-	trimmed := string([]rune(section)[1 : utf8.RuneCountInString(section)-1])
+	runes := []rune(section)
+	if len(runes) < 2 || runes[0] != '[' || runes[len(runes)-1] != ']' {
+		return nil, errors.New("invalid drive section")
+	}
+	trimmed := string(runes[1 : len(runes)-1])
 	parts := strings.Split(trimmed, "_")
+	if len(parts) != 3 || len(parts[0]) < 2 || len(parts[1]) < 2 || len(parts[2]) < 3 {
+		return nil, errors.New("invalid drive section")
+	}
 
 	bus, err := strconv.ParseUint(string([]rune(parts[0])[1:]), 10, 8)
 	if err != nil {
@@ -622,6 +740,9 @@ func parseDriveSection(section string, ns SectionNamespaceKind) (*DriveSection, 
 	do, err := strconv.ParseUint(string([]rune(parts[2])[2:]), 10, 8)
 	if err != nil {
 		return nil, err
+	}
+	if do < 1 || do > 99 {
+		return nil, errors.New("drive object number must be between 1 and 99")
 	}
 
 	return &DriveSection{
@@ -784,7 +905,7 @@ func (p *parser) parseIfBlock(leadingComments []string) Statement {
 
 			var elseIfThen []Statement
 			elseIfThen, comments = p.parseBody(
-				[]l.TokenKind{l.KeywordElse, l.KeywordEndIf},
+				[]l.TokenKind{l.KeywordElse, l.KeywordElseIf, l.KeywordEndIf},
 				diag.IfElseIfEndMissing,
 			)
 
@@ -889,26 +1010,21 @@ func (p *parser) parseBody(
 	endToken []l.TokenKind,
 	diagKind diag.DiagnosticKind,
 ) ([]Statement, []string) {
-	bodyStartPos := p.Pos
-	currDiagCount := len(p.Diagnostics)
 	var comments []string
 	var body []Statement
-	var bodyList []Statement
+	bodyList := []Statement{}
 
 	for {
 		comments = p.parseCommentBlock()
 		token := p.currentToken()
 		if token.Kind == l.EOF {
-			// roll back
-			p.Pos = bodyStartPos
-			p.Diagnostics = p.Diagnostics[:currDiagCount]
-
 			p.Diagnostics = append(p.Diagnostics, diag.Diagnostic{
 				Kind:     diagKind,
 				Severity: diag.Error,
+				Range:    token.Range,
 			})
 
-			return nil, nil
+			return bodyList, comments
 		}
 		if slices.Contains(endToken, token.Kind) {
 			body = bodyList
@@ -998,6 +1114,16 @@ func (p *parser) parseExpression(minPrec uint8) Expression {
 		expression.Range = token.Range
 	case l.LiteralNumber:
 		expression = p.parseNumberLiteral()
+	case l.LiteralHex:
+		_ = p.advance()
+		if strings.Contains(token.Lexeme, "$(") {
+			expression = Expression{Kind: DynamicLiteral(token.Lexeme), Range: token.Range}
+		} else if len(token.Lexeme) <= 2 {
+			p.Diagnostics = append(p.Diagnostics, diag.Diagnostic{Kind: diag.ExpressionInvalid, Range: token.Range, Severity: diag.Error})
+			expression = Expression{Kind: Invalid{}, Range: token.Range}
+		} else {
+			expression = Expression{Kind: HexLiteral(token.Lexeme), Range: token.Range}
+		}
 	case l.LiteralNumberFormat:
 		expression = p.parseFormatNumber()
 	case l.LiteralNull:
@@ -1020,11 +1146,12 @@ func (p *parser) parseExpression(minPrec uint8) Expression {
 		}
 	case l.KeywordNamespaceNc:
 		fallthrough
-	case l.KeywordNamespacePs:
+	case l.KeywordNamespacePs, l.KeywordNamespaceBd:
 		section := p.parseSection()
 		if p.currentToken().Kind == l.SymbolDot {
 			_ = p.advance()
 			ident := p.parseIdentifier(&section)
+			ident.Range.Start = token.Range.Start
 			expression.Kind = ident
 			expression.Range = ident.Range
 		} else {
@@ -1092,13 +1219,21 @@ func getPrecedence(op BinaryOperator) uint8 {
 
 	switch op {
 	case Multiply, Divide:
-		prec = 4
+		prec = 7
 	case Add, Subtract:
-		prec = 3
+		prec = 6
 	case StringConcat:
-		prec = 2
+		prec = 5
+	case And:
+		prec = 4
+	case Or:
+		prec = 3
 	case Equal, NotEqual, LessThan, LessThanEqual, GreaterThan, GreaterThanEqual:
+		prec = 2
+	case LogicalAnd:
 		prec = 1
+	case LogicalOr:
+		prec = 0
 	}
 
 	return prec
@@ -1169,10 +1304,13 @@ func (p *parser) parseFormatNumber() Expression {
 
 	numString := string([]rune(token.Lexeme)[2 : lexLen-1])
 	format := unicode.ToLower([]rune(token.Lexeme)[1])
+	if strings.Contains(numString, "$(") {
+		return Expression{Kind: DynamicLiteral(token.Lexeme), Range: token.Range}
+	}
 
 	switch format {
 	case 'h':
-		if num, err := strconv.ParseUint(numString, 10, 64); err == nil {
+		if num, err := strconv.ParseUint(numString, 16, 64); err == nil {
 			return Expression{
 				Kind: BitwiseLiteral{
 					Kind:  Hex,
@@ -1188,7 +1326,7 @@ func (p *parser) parseFormatNumber() Expression {
 			Severity: diag.Error,
 		})
 	case 'b':
-		if num, err := strconv.ParseUint(numString, 10, 64); err == nil {
+		if num, err := strconv.ParseUint(numString, 2, 64); err == nil {
 			return Expression{
 				Kind: BitwiseLiteral{
 					Kind:  Bin,
@@ -1204,11 +1342,9 @@ func (p *parser) parseFormatNumber() Expression {
 			Severity: diag.Error,
 		})
 	default:
-		p.Diagnostics = append(p.Diagnostics, diag.Diagnostic{
-			Kind:     diag.ExpressionInvalid,
-			Range:    token.Range,
-			Severity: diag.Error,
-		})
+		// CMC also uses single-quoted character literals such as '\r' and
+		// '\n'. Only B/H-prefixed values have numeric semantics.
+		return Expression{Kind: StringLiteral(token.Lexeme), Range: token.Range}
 	}
 
 	return Expression{
@@ -1239,9 +1375,7 @@ func (p *parser) parseNumberLiteral() Expression {
 				_ = p.advance()
 				e := p.parseExpression(0)
 				exponent = &e
-				switch exponent.Kind.(type) {
-				case IdentifierExpression, FloatLiteral:
-				default:
+				if !isValidExponent(exponent.Kind) {
 					p.Diagnostics = append(p.Diagnostics, diag.Diagnostic{
 						Kind:     diag.NumberLiteralInvalidExponent,
 						Range:    source.MergeRange(token.Range, endToken.Range),
@@ -1318,6 +1452,17 @@ func (p *parser) parseNumberLiteral() Expression {
 	}
 }
 
+func isValidExponent(expression ExpressionKind) bool {
+	switch expression := expression.(type) {
+	case IdentifierExpression, IntegerLiteral, FloatLiteral:
+		return true
+	case PrefixedExpression:
+		return isValidExponent(expression.Expression.Kind)
+	default:
+		return false
+	}
+}
+
 func parseVersion(version string) (*VersionLiteral, error) {
 	var versionParts VersionLiteral
 	parts := strings.SplitSeq(version, ".")
@@ -1344,12 +1489,12 @@ func parseBico(bico string) (*BicoLiteral, error) {
 		return nil, err
 	}
 
-	parameter, err := strconv.ParseUint(bico, 10, 16)
+	parameter, err := strconv.ParseUint(parts[1], 10, 16)
 	if err != nil {
 		return nil, err
 	}
 
-	index, err := strconv.ParseUint(bico, 10, 16)
+	index, err := strconv.ParseUint(parts[2], 10, 16)
 	if err != nil {
 		return nil, err
 	}
@@ -1363,47 +1508,71 @@ func parseBico(bico string) (*BicoLiteral, error) {
 
 func (p *parser) parseIdentifier(section *SectionSwitchKind) IdentifierExpression {
 	startToken := p.currentToken()
-	token := startToken
 	endToken := startToken
-
 	var segments []IdentifierSegment
 	var parts []IdentifierPart
 
-loop:
+	flush := func() {
+		segments = append(segments, IdentifierSegment{Parts: append([]IdentifierPart(nil), parts...)})
+		parts = nil
+	}
+
 	for {
+		token := p.currentToken()
 		switch token.Kind {
 		case l.LiteralIdentifier:
 			parts = append(parts, LiteralIdentifier(token.Lexeme))
+			endToken = token
+			_ = p.advance()
 		case l.SymbolDollarParen:
+			replacementStart := token
 			_ = p.advance()
 			replacement := p.parseIdentifier(nil)
 			parts = append(parts, ReplacementIdentifier(replacement))
-			if t := p.expectAndAdvance([]l.TokenKind{l.SymbolRightParen}); t == nil {
+			endToken = p.Tokens[p.Pos-1]
+			if p.currentToken().Kind == l.SymbolRightParen {
+				endToken = p.currentToken()
+				_ = p.advance()
+			} else {
 				p.Diagnostics = append(p.Diagnostics, diag.Diagnostic{
 					Kind:     diag.ExpressionReplacementMissingClosingParentheses,
-					Range:    source.MergeRange(startToken.Range, p.currentToken().Range),
+					Range:    source.MergeRange(replacementStart.Range, p.currentToken().Range),
 					Severity: diag.Error,
 				})
 			}
+		case l.SymbolLeftBracket:
+			var raw strings.Builder
+			depth := 0
+			for {
+				t := p.currentToken()
+				if t.Kind == l.EOF || t.Kind == l.NewLine {
+					break
+				}
+				raw.WriteString(t.Lexeme)
+				endToken = t
+				_ = p.advance()
+				if t.Kind == l.SymbolLeftBracket {
+					depth++
+				} else if t.Kind == l.SymbolRightBracket {
+					depth--
+					if depth == 0 {
+						break
+					}
+				}
+			}
+			parts = append(parts, IndexIdentifier(raw.String()))
 		case l.SymbolDot:
-			var segment IdentifierSegment
-			segment.Parts = append(segment.Parts, parts...)
-			segments = append(segments, segment)
-			parts = parts[0:0]
+			endToken = token
+			flush()
+			_ = p.advance()
 		default:
-			break loop
+			flush()
+			return IdentifierExpression{
+				Segments: segments,
+				Range:    source.MergeRange(startToken.Range, endToken.Range),
+				Section:  section,
+			}
 		}
-
-		endToken = p.currentToken()
-		token = p.advance()
-	}
-
-	segments = append(segments, IdentifierSegment{Parts: parts})
-
-	return IdentifierExpression{
-		Segments: segments,
-		Range:    source.MergeRange(startToken.Range, endToken.Range),
-		Section:  section,
 	}
 }
 

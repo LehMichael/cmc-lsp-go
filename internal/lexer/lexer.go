@@ -77,7 +77,7 @@ func (l *Lexer) NextToken() Token {
 		token = l.createTokeWhile(
 			Comment,
 			leadingWhitespace,
-			func(c rune) bool { return c != '\n' },
+			func(c rune) bool { return c != '\n' && c != '\r' },
 		)
 	case c == '\n':
 		token = l.createTokenCount(NewLine, leadingWhitespace, 1)
@@ -87,6 +87,8 @@ func (l *Lexer) NextToken() Token {
 		token = l.createTokenCount(OperatorEqual, leadingWhitespace, 2)
 	case c == '=':
 		token = l.createTokenCount(OperatorAssign, leadingWhitespace, 1)
+	case c == ':' && nextChar == '=':
+		token = l.createTokenCount(OperatorAssignRaw, leadingWhitespace, 2)
 	case c == '!' && nextChar == '=':
 		token = l.createTokenCount(OperatorUnequal, leadingWhitespace, 2)
 	case c == '!':
@@ -101,7 +103,7 @@ func (l *Lexer) NextToken() Token {
 		token = l.createTokenCount(OperatorGreaterThanEqual, leadingWhitespace, 2)
 	case c == '>':
 		token = l.createTokenCount(OperatorGreaterThan, leadingWhitespace, 1)
-	case c == '[' && (l.lastTokenKind == NewLine || l.lastTokenKind == KeywordNamespaceNc || l.lastTokenKind == KeywordNamespacePs):
+	case c == '[' && (l.lastTokenKind == NewLine || l.lastTokenKind == KeywordNamespaceNc || l.lastTokenKind == KeywordNamespacePs || l.lastTokenKind == KeywordNamespaceBd):
 		token = l.createDelimitedToken(
 			Section,
 			diag.SectionUnterminated,
@@ -162,19 +164,14 @@ func (l *Lexer) NextToken() Token {
 	case c == '&':
 		token = l.createTokenCount(OperatorAnd, leadingWhitespace, 1)
 	case c == '"':
-		token = l.createDelimitedToken(
-			LiteralString,
-			diag.StringUnterminated,
-			leadingWhitespace,
-			'"',
-		)
+		token = l.createStringToken(leadingWhitespace)
 	case c == '\'':
 		token = l.createDelimitedToken(
 			LiteralNumberFormat, diag.NumberFormatUnterminated, leadingWhitespace, '\'',
 		)
 	case c == '?' && nextChar == '=':
 		token = l.createTokenCount(OperatorAssignIfBlank, leadingWhitespace, 2)
-	case c == '$' && unicode.IsLetter(nextChar):
+	case c == '$' && (unicode.IsLetter(nextChar) || unicode.IsNumber(nextChar) || nextChar == '_'):
 		token = l.createTokeWhile(
 			LiteralIdentifier,
 			leadingWhitespace,
@@ -184,6 +181,8 @@ func (l *Lexer) NextToken() Token {
 		token = l.createTokenCount(SymbolDollarParen, leadingWhitespace, 2)
 	case c == '$':
 		token = l.createTokenCount(SymbolDollar, leadingWhitespace, 1)
+	case c == '0' && (nextChar == 'x' || nextChar == 'X'):
+		token = l.createHexToken(leadingWhitespace)
 	case unicode.IsNumber(c):
 		token = l.createTokeWhile(
 			LiteralNumber,
@@ -194,9 +193,75 @@ func (l *Lexer) NextToken() Token {
 		token = l.createIdentifierToken(leadingWhitespace)
 	case c == '#':
 		token = l.createPreprocessorToken(leadingWhitespace)
+	default:
+		// Always make progress. Keeping the offending character in an Unknown
+		// token lets the parser report and recover from it instead of hanging.
+		token = l.createTokenCount(Unknown, leadingWhitespace, 1)
 	}
 
 	return token
+}
+
+func (l *Lexer) createStringToken(leadingWhitespace string) Token {
+	startPos := l.pos
+	startCol := l.currentColumn
+	_ = l.advance()
+	terminated := false
+	for l.pos < len(l.input) && l.getCurrentChar() != '\n' {
+		if l.getCurrentChar() == '"' {
+			// CMC escapes a double quote inside a string as '"'.
+			if l.pos > startPos && l.input[l.pos-1] == '\'' && l.getNextChar() == '\'' {
+				_ = l.advance()
+				continue
+			}
+			_ = l.advance()
+			terminated = true
+			break
+		}
+		_ = l.advance()
+	}
+	lexeme := string(l.input[startPos:l.pos])
+	if !terminated {
+		l.diagnostics = append(l.diagnostics, diag.Diagnostic{
+			Kind: diag.StringUnterminated, Severity: diag.Error,
+			Range: source.NewRange(l.currentLine, startCol, len([]rune(lexeme))),
+		})
+	}
+	l.lastTokenKind = LiteralString
+	return Token{Kind: LiteralString, Lexeme: lexeme, LeadingWhitespace: leadingWhitespace, Range: source.NewRange(l.currentLine, startCol, len([]rune(lexeme)))}
+}
+
+func (l *Lexer) createHexToken(leadingWhitespace string) Token {
+	startPos := l.pos
+	startCol := l.currentColumn
+	_ = l.advanceCount(2)
+	for l.pos < len(l.input) {
+		current := l.getCurrentChar()
+		if (current >= '0' && current <= '9') || (unicode.ToLower(current) >= 'a' && unicode.ToLower(current) <= 'f') {
+			_ = l.advance()
+			continue
+		}
+		if current == '$' && l.getNextChar() == '(' {
+			depth := 0
+			for l.pos < len(l.input) && l.getCurrentChar() != '\n' {
+				value := l.getCurrentChar()
+				_ = l.advance()
+				if value == '(' {
+					depth++
+				} else if value == ')' {
+					depth--
+					if depth == 0 {
+						break
+					}
+				}
+			}
+			continue
+		}
+		break
+	}
+	lexeme := string(l.input[startPos:l.pos])
+	l.lastTokenKind = LiteralHex
+	return Token{Kind: LiteralHex, Lexeme: lexeme, LeadingWhitespace: leadingWhitespace, Range: source.NewRange(l.currentLine, startCol, len([]rune(lexeme)))}
 }
 
 func (l *Lexer) createPreprocessorToken(leadingWhitespace string) Token {
@@ -231,6 +296,10 @@ func (l *Lexer) createIdentifierToken(leadingWhitespace string) Token {
 		token.Kind = KeywordElse
 	case strings.EqualFold(token.Lexeme, "elsif"):
 		token.Kind = KeywordElseIf
+	case strings.EqualFold(token.Lexeme, "elif"):
+		token.Kind = KeywordElseIf
+	case strings.EqualFold(token.Lexeme, "endif"):
+		token.Kind = KeywordEndIf
 	case strings.EqualFold(token.Lexeme, "while"):
 		token.Kind = KeywordWhile
 	case strings.EqualFold(token.Lexeme, "endwhile"):
@@ -251,13 +320,31 @@ func (l *Lexer) createIdentifierToken(leadingWhitespace string) Token {
 		token.Kind = KeywordNamespaceNc
 	case strings.EqualFold(token.Lexeme, "ps"):
 		token.Kind = KeywordNamespacePs
+	case strings.EqualFold(token.Lexeme, "bd"):
+		token.Kind = KeywordNamespaceBd
 	case strings.EqualFold(token.Lexeme, "chandata"):
 		token.Kind = KeywordNamespaceChan
+	}
+
+	if token.Kind == LiteralIdentifier && isBlockNumber(token.Lexeme) {
+		token.Kind = LiteralBlockNumber
 	}
 
 	l.lastTokenKind = token.Kind
 
 	return token
+}
+
+func isBlockNumber(value string) bool {
+	if len(value) < 2 || (value[0] != 'N' && value[0] != 'n') {
+		return false
+	}
+	for _, r := range value[1:] {
+		if !unicode.IsNumber(r) {
+			return false
+		}
+	}
+	return true
 }
 
 func (l *Lexer) createDelimitedToken(
@@ -298,7 +385,7 @@ func (l *Lexer) createDelimitedToken(
 		Kind:              kind,
 		Lexeme:            string(l.input[startPos:l.pos]),
 		LeadingWhitespace: leadingWhitespace,
-		Range:             source.NewRange(l.currentLine, startCol, len(lexeme)),
+		Range:             source.NewRange(l.currentLine, startCol, len([]rune(lexeme))),
 	}
 }
 
@@ -332,7 +419,7 @@ func (l *Lexer) createTokenCount(kind TokenKind, leadingWhitespace string, count
 		Kind:              kind,
 		Lexeme:            lexeme,
 		LeadingWhitespace: leadingWhitespace,
-		Range:             source.NewRange(l.currentLine, startCol, len(lexeme)),
+		Range:             source.NewRange(l.currentLine, startCol, len([]rune(lexeme))),
 	}
 }
 
@@ -359,7 +446,7 @@ func (l *Lexer) createTokeWhile(
 		Kind:              kind,
 		Lexeme:            lexeme,
 		LeadingWhitespace: leadingWhitespace,
-		Range:             source.NewRange(l.currentLine, startCol, len(lexeme)),
+		Range:             source.NewRange(l.currentLine, startCol, len([]rune(lexeme))),
 	}
 }
 

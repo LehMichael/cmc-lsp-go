@@ -45,6 +45,7 @@ const (
 	AndAssign
 	OrAssign
 	AssignIfBlank
+	AssignRaw
 )
 
 type Assignment struct {
@@ -104,6 +105,7 @@ const (
 	Chandata
 	Ps
 	Nc
+	Bd
 )
 
 type SectionSwitch struct {
@@ -132,6 +134,19 @@ type DriveSection struct {
 }
 
 func (DriveSection) isSectionSwitchKind() {}
+
+type DisplaySection struct {
+	Name      string
+	Namespace SectionNamespaceKind
+}
+
+func (DisplaySection) isSectionSwitchKind() {}
+
+// DynamicSection represents a section containing replacement operators, for
+// example [$(Up.drive.psPath)]. Its final value is only known at runtime.
+type DynamicSection string
+
+func (DynamicSection) isSectionSwitchKind() {}
 
 type InvalidSection []lexer.Token
 
@@ -244,9 +259,39 @@ func (r ReplacementIdentifier) MarshalJSON() ([]byte, error) {
 	})
 }
 
+// IndexIdentifier preserves an identifier index, including its brackets.
+// Indices can contain axis names, comma-separated coordinates and replacement
+// operators, so treating them as a lossless identifier part is intentional.
+type IndexIdentifier string
+
+func (IndexIdentifier) isIdentifierPart() {}
+
+func (i IndexIdentifier) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Type  string
+		Value string
+	}{
+		Type:  fmt.Sprintf("%T", i),
+		Value: string(i),
+	})
+}
+
 type StringLiteral string
 
 func (StringLiteral) isExpressionKind() {}
+
+// RawLiteral is the uninterpreted right-hand side of the := operator.
+type RawLiteral string
+
+func (RawLiteral) isExpressionKind() {}
+
+type HexLiteral string
+
+func (HexLiteral) isExpressionKind() {}
+
+type DynamicLiteral string
+
+func (DynamicLiteral) isExpressionKind() {}
 
 type IntegerLiteral int64
 

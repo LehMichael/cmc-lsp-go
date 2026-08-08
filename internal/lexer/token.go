@@ -20,11 +20,13 @@ const (
 
 	KeywordNamespaceNc
 	KeywordNamespacePs
+	KeywordNamespaceBd
 	KeywordNamespaceChan
 
 	Section
 
 	OperatorAssign
+	OperatorAssignRaw
 	OperatorAssignIfBlank
 	OperatorAddAssign
 	OperatorSubtractAssign
@@ -55,11 +57,13 @@ const (
 	OperatorNegate
 
 	LiteralIdentifier
+	LiteralBlockNumber
 	LiteralString
 
 	LiteralNumberFormat
 
 	LiteralNumber
+	LiteralHex
 	LiteralNumberEx
 	LiteralNull
 	LiteralTrue
