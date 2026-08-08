@@ -22,3 +22,10 @@ func TestRoundTrip(t *testing.T) {
 		}
 	}
 }
+
+func TestDecodeWindows1252(t *testing.T) {
+	input := []byte{'A', 0x93, 'x', 0x94, 0x96, 0x80}
+	if got, want := DecodeWindows1252(input), "A“x”–€"; got != want {
+		t.Fatalf("DecodeWindows1252() = %q, want %q", got, want)
+	}
+}

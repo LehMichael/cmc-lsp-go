@@ -6,6 +6,7 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/lehmichael/cmc-lsp-go/internal/database"
 	"github.com/lehmichael/cmc-lsp-go/internal/lexer"
 	"github.com/lehmichael/cmc-lsp-go/internal/parser"
 	"github.com/lehmichael/cmc-lsp-go/internal/project"
@@ -36,6 +37,11 @@ func (server *Lsp) loadProjects(params initializeParams) {
 	}
 	if len(roots) == 0 && params.RootPath != nil {
 		roots = append(roots, *params.RootPath)
+	}
+	if databasePath := database.Locate(roots, params.InitializationOptions.CMCDatabasePath); databasePath != "" {
+		if catalog, err := database.Load(databasePath, params.Locale); err == nil {
+			server.parameters = catalog
+		}
 	}
 
 	seen := map[string]struct{}{}

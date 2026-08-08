@@ -36,7 +36,9 @@ p107[$(Up.i)] ?= 254
 $MN_TOOL_MANAGEMENT_MASK |= 'B10000'
 Up.Mask = 'HFF'
 Up.Link = 1:105.0
+Up.DynamicLink = $(Up.doNr):4105.0
 Up.Small = 1.2EX-3
+Up.DriveSmall = 1.05E-02
 Up.Text = "line 1" << '\r' << '\n' << "line 2"
 Up.Raw := $MA_MAX_AX_VELO[AX1]
 `,

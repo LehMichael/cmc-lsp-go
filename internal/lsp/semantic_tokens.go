@@ -109,6 +109,8 @@ func classifySemanticToken(tokens []lexer.Token, index int) (uint32, uint32, boo
 		return semanticNumber, 0, true
 	case lexer.PreprocessorInclude, lexer.PreprocessorUnknown:
 		return semanticMacro, 0, true
+	case lexer.SymbolDollar:
+		return semanticParameter, 0, true
 	case lexer.LiteralIdentifier:
 		return classifyIdentifier(tokens, index)
 	default:
@@ -135,6 +137,9 @@ func classifyIdentifier(tokens []lexer.Token, index int) (uint32, uint32, bool) 
 	if next == lexer.SymbolLeftParen {
 		return semanticFunction, 0, true
 	}
+	if isDriveParameter(tokens[index].Lexeme) {
+		return semanticParameter, 0, true
+	}
 	if previous == lexer.SymbolDot {
 		return semanticProperty, 0, true
 	}
@@ -145,6 +150,18 @@ func classifyIdentifier(tokens []lexer.Token, index int) (uint32, uint32, bool) 
 		return semanticParameter, 0, true
 	}
 	return semanticVariable, 0, true
+}
+
+func isDriveParameter(value string) bool {
+	if len(value) < 2 || (value[0] != 'p' && value[0] != 'P' && value[0] != 'r' && value[0] != 'R') {
+		return false
+	}
+	for _, digit := range value[1:] {
+		if digit < '0' || digit > '9' {
+			return false
+		}
+	}
+	return true
 }
 
 func isCMCNamespace(value string) bool {

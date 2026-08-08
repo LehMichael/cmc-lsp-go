@@ -29,6 +29,27 @@ func Decode(input []byte) (string, Encoding) {
 	return string(runes), Latin1
 }
 
+// DecodeWindows1252 decodes the encoding used by Siemens' parameter XML
+// database. Bytes not assigned by Windows-1252 retain their control-code value.
+func DecodeWindows1252(input []byte) string {
+	runes := make([]rune, 0, len(input))
+	for _, value := range input {
+		if value >= 0x80 && value <= 0x9f {
+			runes = append(runes, windows1252[value-0x80])
+		} else {
+			runes = append(runes, rune(value))
+		}
+	}
+	return string(runes)
+}
+
+var windows1252 = [32]rune{
+	'€', '\u0081', '‚', 'ƒ', '„', '…', '†', '‡',
+	'ˆ', '‰', 'Š', '‹', 'Œ', '\u008d', 'Ž', '\u008f',
+	'\u0090', '‘', '’', '“', '”', '•', '–', '—',
+	'˜', '™', 'š', '›', 'œ', '\u009d', 'ž', 'Ÿ',
+}
+
 func Encode(input string, encoding Encoding) ([]byte, error) {
 	switch encoding {
 	case UTF8:

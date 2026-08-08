@@ -44,6 +44,14 @@ func (p *parser) currentToken() l.Token {
 	return p.Tokens[p.Pos]
 }
 
+func (p *parser) peekToken(offset int) l.Token {
+	position := p.Pos + offset
+	if position >= len(p.Tokens) {
+		return p.Tokens[len(p.Tokens)-1]
+	}
+	return p.Tokens[position]
+}
+
 func (p *parser) advance() l.Token {
 	if p.Pos < len(p.Tokens)-1 {
 		p.Pos++
@@ -1104,6 +1112,15 @@ func (p *parser) parseExpression(minPrec uint8) Expression {
 
 		if p.currentToken().Kind == l.SymbolLeftParen {
 			expression = p.parseCallExpression(identifier)
+		} else if p.currentToken().Kind == l.Unknown && p.currentToken().Lexeme == ":" &&
+			p.peekToken(1).Kind == l.LiteralNumber {
+			// SINAMICS BICO literals can use a dynamic drive-object number,
+			// for example $(Up.doNr):4105.0.
+			_ = p.advance()
+			tail := p.currentToken()
+			_ = p.advance()
+			expression.Kind = DynamicLiteral(IdentifierString(identifier) + ":" + tail.Lexeme)
+			expression.Range = source.MergeRange(identifier.Range, tail.Range)
 		} else {
 			expression.Kind = identifier
 			expression.Range = identifier.Range

@@ -14,6 +14,7 @@ func TestSemanticTokens(t *testing.T) {
 		{0, 0, 9, "comment", 0},
 		{1, 0, 4, "keyword", 0},
 		{1, 5, 7, "function", semanticDeclaration},
+		{1, 13, 1, "parameter", 0},
 		{2, 4, 2, "namespace", 0},
 		{2, 7, 6, "property", 0},
 		{2, 14, 1, "operator", 0},

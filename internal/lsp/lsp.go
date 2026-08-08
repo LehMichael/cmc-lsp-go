@@ -13,6 +13,7 @@ import (
 	"unicode/utf16"
 	"unicode/utf8"
 
+	"github.com/lehmichael/cmc-lsp-go/internal/database"
 	"github.com/lehmichael/cmc-lsp-go/internal/diag"
 	"github.com/lehmichael/cmc-lsp-go/internal/formatter"
 	"github.com/lehmichael/cmc-lsp-go/internal/lexer"
@@ -30,6 +31,7 @@ type Lsp struct {
 	shutdown    bool
 	projects    []*project.Project
 	index       []symbolOccurrence
+	parameters  *database.Catalog
 }
 
 type header struct {
@@ -284,6 +286,9 @@ func (server *Lsp) handleHover(message requestMessage) {
 	}
 	word := wordAt(text, params.Position)
 	documentation, ok := hoverDocumentation[strings.ToLower(word)]
+	if !ok && server.parameters != nil {
+		documentation, ok = server.parameters.Hover(word)
+	}
 	if !ok {
 		if occurrence := server.definitionAt(params.TextDocument.URI, symbolAt(text, params.Position)); occurrence != nil {
 			documentation = "`" + occurrence.Name + "`  \n" + occurrence.Detail

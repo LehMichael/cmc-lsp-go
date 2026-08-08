@@ -203,9 +203,13 @@ type textDocumentItem struct {
 }
 
 type initializeParams struct {
-	RootURI          *string `json:"rootUri,omitempty"`
-	RootPath         *string `json:"rootPath,omitempty"`
-	Capabilities     any     `json:"capabilities,omitempty"`
+	RootURI               *string `json:"rootUri,omitempty"`
+	RootPath              *string `json:"rootPath,omitempty"`
+	Locale                string  `json:"locale,omitempty"`
+	Capabilities          any     `json:"capabilities,omitempty"`
+	InitializationOptions struct {
+		CMCDatabasePath string `json:"cmcDatabasePath,omitempty"`
+	} `json:"initializationOptions,omitempty"`
 	WorkspaceFolders []struct {
 		URI  string `json:"uri"`
 		Name string `json:"name"`

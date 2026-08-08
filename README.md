@@ -44,6 +44,12 @@ When the workspace contains a `.upproj` file, the server reads its XML and resol
 
 Files that are not referenced by a `.upproj` remain in single-file mode and do not inherit unrelated project symbols. `.tea` data files are parsed and formatted as regular CMC scripts.
 
+### Siemens parameter database
+
+If a Siemens `DataBase` directory is present in the workspace or one of its parent directories, the server loads its `.mdat`, `.svar`, and `.para` XML files at startup. Hover then shows the supplied descriptions for NC machine/setting data, system variables, and SINAMICS `p`/`r` parameters. The files are parsed directly, so the database can be updated by replacing the directory.
+
+The server uses the LSP client's `locale`: German locales use the descriptions in the `DataBase` root, while other locales prefer a matching language directory and then `DataBase/en`. To keep the data elsewhere, pass `cmcDatabasePath` in the LSP `initializationOptions` object.
+
 ## Formatter
 
 Format standard input:

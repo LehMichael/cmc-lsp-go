@@ -279,10 +279,13 @@ func (l *Lexer) createPreprocessorToken(leadingWhitespace string) Token {
 func (l *Lexer) createIdentifierToken(leadingWhitespace string) Token {
 	currentChar := l.getCurrentChar()
 	nextChar := l.getNextChar()
-	if l.lastTokenKind == LiteralNumber &&
-		unicode.ToLower(currentChar) == 'e' &&
-		unicode.ToLower(nextChar) == 'x' {
-		return l.createTokenCount(LiteralNumberEx, leadingWhitespace, 2)
+	if l.lastTokenKind == LiteralNumber && unicode.ToLower(currentChar) == 'e' {
+		if unicode.ToLower(nextChar) == 'x' {
+			return l.createTokenCount(LiteralNumberEx, leadingWhitespace, 2)
+		}
+		// SINAMICS .tea exports use standard E notation while CMC scripts also
+		// accept the documented EX spelling.
+		return l.createTokenCount(LiteralNumberEx, leadingWhitespace, 1)
 	}
 
 	token := l.createTokeWhile(LiteralIdentifier, leadingWhitespace, func(r rune) bool {
