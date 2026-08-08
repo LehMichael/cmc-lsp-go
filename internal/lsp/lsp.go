@@ -191,6 +191,9 @@ func (server *Lsp) handleRequest(message requestMessage) {
 				"documentSymbolProvider":     true,
 				"definitionProvider":         true,
 				"referencesProvider":         true,
+				"renameProvider": map[string]any{
+					"prepareProvider": true,
+				},
 				"workspaceSymbolProvider": true,
 				"hoverProvider":           true,
 				"signatureHelpProvider": map[string]any{
@@ -227,6 +230,10 @@ func (server *Lsp) handleRequest(message requestMessage) {
 		server.handleReferences(message)
 	case "textDocument/signatureHelp":
 		server.handleSignatureHelp(message)
+	case "textDocument/prepareRename":
+		server.handlePrepareRename(message)
+	case "textDocument/rename":
+		server.handleRename(message)
 	case "textDocument/semanticTokens/full":
 		server.handleSemanticTokens(message)
 	case "workspace/symbol":

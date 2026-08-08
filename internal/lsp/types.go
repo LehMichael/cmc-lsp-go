@@ -253,6 +253,12 @@ type textDocumentPositionParams struct {
 	Position     position               `json:"position"`
 }
 
+type renameParams struct {
+	TextDocument textDocumentIdentifier `json:"textDocument"`
+	Position     position               `json:"position"`
+	NewName      string                 `json:"newName"`
+}
+
 type diagnostic struct {
 	Range    lspRange `json:"range"`
 	Severity int      `json:"severity,omitempty"`
@@ -264,6 +270,10 @@ type diagnostic struct {
 type textEdit struct {
 	Range   lspRange `json:"range"`
 	NewText string   `json:"newText"`
+}
+
+type workspaceEdit struct {
+	Changes map[string][]textEdit `json:"changes"`
 }
 
 type location struct {

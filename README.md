@@ -36,7 +36,7 @@ Configure an LSP client with:
 - File extensions: `.upscr`, `.uplib`, `.tea`
 - Language ID: `cmc`
 
-The server supports full document synchronization, live syntax diagnostics, semantic syntax highlighting, whole-document formatting, document/workspace symbols, completion, hover documentation, definitions, references, and signature help. It uses UTF-16 positions as required by the default LSP encoding.
+The server supports full document synchronization, live syntax diagnostics, semantic syntax highlighting, whole-document formatting, document/workspace symbols, completion, hover documentation, definitions, references, signature help, and safe callable rename. It uses UTF-16 positions as required by the default LSP encoding.
 
 ### Zed
 
@@ -73,7 +73,7 @@ namespaces, parameters, and properties using LSP context.
 
 ### Project and single-file modes
 
-When the workspace contains a `.upproj` file, the server reads its XML and resolves the Windows-style paths in `ScriptLibList` and `<script ref="...">` elements. Referenced `.upscr` and `.uplib` files share a project index, so library functions and project variables participate in completion, hover, signature help, go-to-definition, references, and workspace-symbol searches.
+When the workspace contains a `.upproj` file, the server reads its XML and resolves the Windows-style paths in `ScriptLibList` and `<script ref="...">` elements. Referenced `.upscr` and `.uplib` files share a project index, so library functions and project variables participate in completion, hover, signature help, go-to-definition, references, rename, and workspace-symbol searches.
 
 Files that are not referenced by a `.upproj` remain in single-file mode and do not inherit unrelated project symbols. `.tea` data files are parsed and formatted as regular CMC scripts.
 
@@ -136,6 +136,8 @@ cmc-check -format path/to/project
 - `#include` directives and semicolon comments
 
 CMC has context-dependent host functions and system variables that vary by CMC release and package type. The server treats function names and data identifiers as open-ended rather than rejecting undocumented vendor or user-defined names.
+
+Rename is intentionally limited to unambiguous, statically named user-defined functions and procedures. Vendor parameters, dynamic identifiers, and data variables are refused until their exact symbol boundaries and runtime scoping can be proven safely.
 
 ## Development
 
