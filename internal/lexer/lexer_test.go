@@ -79,6 +79,16 @@ func TestLexer_NextToken(t *testing.T) {
 				{Kind: lexer.SymbolRightParen, Lexeme: ")"},
 			},
 		},
+		{
+			name:  "leading N-number annotation",
+			input: "  N20000 Up.N20000",
+			want: []lexer.Token{
+				{Kind: lexer.LiteralBlockNumber, Lexeme: "N20000"},
+				{Kind: lexer.LiteralIdentifier, Lexeme: "Up"},
+				{Kind: lexer.SymbolDot, Lexeme: "."},
+				{Kind: lexer.LiteralIdentifier, Lexeme: "N20000"},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -279,6 +279,7 @@ func (l *Lexer) createPreprocessorToken(leadingWhitespace string) Token {
 func (l *Lexer) createIdentifierToken(leadingWhitespace string) Token {
 	currentChar := l.getCurrentChar()
 	nextChar := l.getNextChar()
+	atLineStart := l.lastTokenKind == NewLine
 	if l.lastTokenKind == LiteralNumber && unicode.ToLower(currentChar) == 'e' {
 		if unicode.ToLower(nextChar) == 'x' {
 			return l.createTokenCount(LiteralNumberEx, leadingWhitespace, 2)
@@ -329,7 +330,7 @@ func (l *Lexer) createIdentifierToken(leadingWhitespace string) Token {
 		token.Kind = KeywordNamespaceChan
 	}
 
-	if token.Kind == LiteralIdentifier && isBlockNumber(token.Lexeme) {
+	if token.Kind == LiteralIdentifier && atLineStart && isBlockNumber(token.Lexeme) {
 		token.Kind = LiteralBlockNumber
 	}
 

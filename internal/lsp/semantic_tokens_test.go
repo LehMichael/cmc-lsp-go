@@ -39,6 +39,24 @@ func TestSemanticTokensUseUTF16Columns(t *testing.T) {
 	}
 }
 
+func TestSemanticTokensTreatLeadingNNumberAsAnnotation(t *testing.T) {
+	decoded := decodeSemanticTokens(semanticTokensFor("  N20000 Up.x = 1\nUp.N20000 = 2\n"))
+	want := []decodedSemanticToken{
+		{0, 2, 6, "comment", 0},
+		{0, 9, 2, "namespace", 0},
+		{0, 12, 1, "property", 0},
+		{0, 14, 1, "operator", 0},
+		{0, 16, 1, "number", 0},
+		{1, 0, 2, "namespace", 0},
+		{1, 3, 6, "property", 0},
+		{1, 10, 1, "operator", 0},
+		{1, 12, 1, "number", 0},
+	}
+	if !slices.Equal(decoded, want) {
+		t.Fatalf("semantic tokens\nwant: %#v\n got: %#v", want, decoded)
+	}
+}
+
 type decodedSemanticToken struct {
 	line, start, length int
 	tokenType           string

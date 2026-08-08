@@ -127,6 +127,7 @@ cmc-check -format path/to/project
 - Arithmetic, comparison, logical, bitwise, and string-concatenation operators
 - `If`/`ElsIf`/`ElIf`/`Else`/`EndIf` and `While`/`EndWhile`
 - NC, drive, and display sections, including dynamic replacement sections
+- Optional leading `N<number>` machine-data annotations, treated as non-semantic comments
 - Qualified `NC[...]`, `PS[...]`, and `BD[...]` data access
 - Indexed identifiers and nested `$(Up.variable)` replacements
 - Strings, booleans, null, decimal, version, BICO, binary, and hexadecimal literals

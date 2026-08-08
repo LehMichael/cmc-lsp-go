@@ -103,9 +103,11 @@ func classifySemanticToken(tokens []lexer.Token, index int) (uint32, uint32, boo
 		return semanticProperty, 0, true
 	case lexer.Comment:
 		return semanticComment, 0, true
+	case lexer.LiteralBlockNumber:
+		return semanticComment, 0, true
 	case lexer.LiteralString, lexer.LiteralNumberFormat:
 		return semanticString, 0, true
-	case lexer.LiteralNumber, lexer.LiteralHex, lexer.LiteralNumberEx, lexer.LiteralBlockNumber:
+	case lexer.LiteralNumber, lexer.LiteralHex, lexer.LiteralNumberEx:
 		return semanticNumber, 0, true
 	case lexer.PreprocessorInclude, lexer.PreprocessorUnknown:
 		return semanticMacro, 0, true
