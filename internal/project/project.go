@@ -55,7 +55,7 @@ func Load(path string) (*Project, error) {
 			}
 			ref := attribute(token.Attr, "ref")
 			extension := strings.ToLower(filepath.Ext(strings.ReplaceAll(ref, "\\", "/")))
-			if ref == "" || (extension != ".upscr" && extension != ".uplib") {
+			if ref == "" || !IsSourceExtension(extension) {
 				continue
 			}
 			resolved := ResolveReference(result.Root, ref)
@@ -79,6 +79,17 @@ func Load(path string) (*Project, error) {
 		}
 	}
 	return result, nil
+}
+
+// IsSourceExtension reports whether an extension is interpreted as CMC source.
+// .tea files use the same syntax as scripts and are commonly used for data.
+func IsSourceExtension(extension string) bool {
+	switch strings.ToLower(extension) {
+	case ".upscr", ".uplib", ".tea":
+		return true
+	default:
+		return false
+	}
 }
 
 func ResolveReference(projectRoot, reference string) string {

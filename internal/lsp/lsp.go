@@ -191,6 +191,13 @@ func (server *Lsp) handleRequest(message requestMessage) {
 				"referencesProvider":         true,
 				"workspaceSymbolProvider":    true,
 				"hoverProvider":              true,
+				"semanticTokensProvider": map[string]any{
+					"legend": map[string]any{
+						"tokenTypes":     semanticTokenTypes,
+						"tokenModifiers": semanticTokenModifiers,
+					},
+					"full": true,
+				},
 				"completionProvider": map[string]any{
 					"triggerCharacters": []string{".", "$"},
 				},
@@ -212,6 +219,8 @@ func (server *Lsp) handleRequest(message requestMessage) {
 		server.handleDefinition(message)
 	case "textDocument/references":
 		server.handleReferences(message)
+	case "textDocument/semanticTokens/full":
+		server.handleSemanticTokens(message)
 	case "workspace/symbol":
 		server.handleWorkspaceSymbols(message)
 	default:

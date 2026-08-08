@@ -47,3 +47,14 @@ func TestLoad(t *testing.T) {
 		t.Fatalf("unexpected project graph: %#v", loaded)
 	}
 }
+
+func TestIsSourceExtension(t *testing.T) {
+	for _, extension := range []string{".upscr", ".UPLIB", ".tea", ".TEA"} {
+		if !IsSourceExtension(extension) {
+			t.Errorf("IsSourceExtension(%q) = false", extension)
+		}
+	}
+	if IsSourceExtension(".xml") {
+		t.Error("XML must not be treated as CMC source")
+	}
+}

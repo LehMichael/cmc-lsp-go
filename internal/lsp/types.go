@@ -240,6 +240,10 @@ type formattingParams struct {
 	} `json:"options"`
 }
 
+type semanticTokens struct {
+	Data []uint32 `json:"data"`
+}
+
 type textDocumentPositionParams struct {
 	TextDocument textDocumentIdentifier `json:"textDocument"`
 	Position     position               `json:"position"`

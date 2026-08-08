@@ -33,16 +33,16 @@ Configure an LSP client with:
 
 - Command: `cmc-lsp`
 - Transport: standard input/output
-- File extensions: `.upscr`, `.uplib`
+- File extensions: `.upscr`, `.uplib`, `.tea`
 - Language ID: `cmc`
 
-The server supports full document synchronization, live syntax diagnostics, whole-document formatting, document/workspace symbols, completion, hover documentation, definitions, and references. It uses UTF-16 positions as required by the default LSP encoding.
+The server supports full document synchronization, live syntax diagnostics, semantic syntax highlighting, whole-document formatting, document/workspace symbols, completion, hover documentation, definitions, and references. It uses UTF-16 positions as required by the default LSP encoding.
 
 ### Project and single-file modes
 
 When the workspace contains a `.upproj` file, the server reads its XML and resolves the Windows-style paths in `ScriptLibList` and `<script ref="...">` elements. Referenced `.upscr` and `.uplib` files share a project index, so library functions and project variables participate in completion, hover, go-to-definition, references, and workspace-symbol searches.
 
-Files that are not referenced by a `.upproj` remain in single-file mode and do not inherit unrelated project symbols.
+Files that are not referenced by a `.upproj` remain in single-file mode and do not inherit unrelated project symbols. `.tea` data files are parsed and formatted as regular CMC scripts.
 
 ## Formatter
 

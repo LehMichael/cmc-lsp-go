@@ -90,7 +90,7 @@ func collectFiles(arguments []string) ([]string, error) {
 				return walkErr
 			}
 			extension := strings.ToLower(filepath.Ext(entry.Name()))
-			if !entry.IsDir() && (extension == ".upscr" || extension == ".uplib") {
+			if !entry.IsDir() && project.IsSourceExtension(extension) {
 				add(path)
 			}
 			return nil
