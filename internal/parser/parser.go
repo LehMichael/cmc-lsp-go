@@ -256,11 +256,14 @@ func (p *parser) parseFunctionStatement(leadingComments []string) Statement {
 	}
 
 	leadingCommentsEnd := comments
+	description, argumentDescriptions := parseFunctionDocumentation(leadingComments)
 
 	return Statement{
 		Kind: FunctionStatement{
 			Kind:                      kind,
 			Identifier:                identifier,
+			Description:               description,
+			ArgumentDescriptions:      argumentDescriptions,
 			ArgCount:                  arcCount,
 			Body:                      body,
 			TrailingCommentStart:      trailingCommentStart,
@@ -276,6 +279,40 @@ func (p *parser) parseFunctionStatement(leadingComments []string) Statement {
 		TrailingComment: trailingCommentEnd,
 		Range:           source.MergeRange(startToken.Range, endToken.Range),
 	}
+}
+
+func parseFunctionDocumentation(comments []string) (string, []string) {
+	var description string
+	arguments := make([]string, 9)
+	highestArgument := 0
+
+	for _, comment := range comments {
+		content := strings.TrimSpace(comment)
+		content = strings.TrimSpace(strings.TrimPrefix(content, ";"))
+		key, value, found := strings.Cut(content, ":")
+		if !found {
+			continue
+		}
+		key = strings.TrimSpace(key)
+		value = strings.TrimSpace(value)
+		if strings.EqualFold(key, "Description") {
+			description = value
+			continue
+		}
+		if len(key) < 4 || !strings.EqualFold(key[:3], "Arg") {
+			continue
+		}
+		position, err := strconv.Atoi(key[3:])
+		if err != nil || position < 1 || position > len(arguments) {
+			continue
+		}
+		arguments[position-1] = value
+		if position > highestArgument {
+			highestArgument = position
+		}
+	}
+
+	return description, arguments[:highestArgument]
 }
 
 func (p *parser) parsePreprocessor(leadingComments []string) Statement {

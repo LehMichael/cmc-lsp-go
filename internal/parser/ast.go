@@ -184,6 +184,8 @@ func (NewLine) isStatementKind() {}
 type FunctionStatement struct {
 	Kind                      FunctionKind
 	Identifier                *IdentifierExpression
+	Description               string   `json:",omitempty"`
+	ArgumentDescriptions      []string `json:",omitempty"`
 	LeadingCommentsEnd        []string `json:",omitempty"`
 	TrailingCommentStart      *string  `json:",omitempty"`
 	ArgCount                  int

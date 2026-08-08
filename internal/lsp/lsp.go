@@ -291,7 +291,7 @@ func (server *Lsp) handleHover(message requestMessage) {
 	}
 	if !ok {
 		if occurrence := server.definitionAt(params.TextDocument.URI, symbolAt(text, params.Position)); occurrence != nil {
-			documentation = "`" + occurrence.Name + "`  \n" + occurrence.Detail
+			documentation = callableHover(*occurrence)
 		} else {
 			server.respond(message.ID, nil, nil)
 			return
@@ -300,6 +300,17 @@ func (server *Lsp) handleHover(message requestMessage) {
 	server.respond(message.ID, map[string]any{
 		"contents": map[string]string{"kind": "markdown", "value": documentation},
 	}, nil)
+}
+
+func callableHover(occurrence symbolOccurrence) string {
+	if occurrence.CallableKind == "" {
+		return "`" + occurrence.Name + "`  \n" + occurrence.Detail
+	}
+	result := "```cmc\n" + occurrence.CallableKind + " " + occurrence.Name + strings.TrimPrefix(occurrence.Detail, occurrence.CallableKind) + "\n```"
+	if occurrence.Documentation != "" {
+		result += "\n\n" + occurrence.Documentation
+	}
+	return result
 }
 
 func decodeParams(raw json.RawMessage, target any) error {
@@ -433,10 +444,11 @@ func symbolsForStatements(text string, statements []parser.Statement) []document
 		case parser.FunctionStatement:
 			name := "<invalid definition>"
 			selection := rangeValue
-			detail := "function"
+			callableKind := "func"
 			if kind.Kind == parser.Procedure {
-				detail = "procedure"
+				callableKind = "proc"
 			}
+			detail := callableDetail(callableKind, kind.ArgCount, kind.ArgumentDescriptions)
 			if kind.Identifier != nil {
 				name = parser.IdentifierString(*kind.Identifier)
 				selection = sourceRangeToLSP(text, kind.Identifier.Range)

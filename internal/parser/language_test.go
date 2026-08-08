@@ -71,6 +71,59 @@ proc MyProcedure() {
 	}
 }
 
+func TestFunctionDocumentation(t *testing.T) {
+	input := `;Description: Example of a function definition
+;Arg1:<string>
+;Arg3: third value
+func MyFunction($, $, $) {
+  Return(0)
+}
+`
+	tokens, diagnostics := lexer.Tokenize(input)
+	statements, diagnostics := Parse(tokens, diagnostics)
+	if len(diagnostics) != 0 {
+		t.Fatalf("diagnostics = %#v", diagnostics)
+	}
+	definition, ok := statements[0].Kind.(FunctionStatement)
+	if !ok {
+		t.Fatalf("statement = %#v", statements[0].Kind)
+	}
+	if definition.Description != "Example of a function definition" {
+		t.Fatalf("description = %q", definition.Description)
+	}
+	wantArguments := []string{"<string>", "", "third value"}
+	if len(definition.ArgumentDescriptions) != len(wantArguments) {
+		t.Fatalf("arguments = %#v", definition.ArgumentDescriptions)
+	}
+	for index, want := range wantArguments {
+		if definition.ArgumentDescriptions[index] != want {
+			t.Fatalf("argument %d = %q, want %q", index+1, definition.ArgumentDescriptions[index], want)
+		}
+	}
+}
+
+func TestFunctionDocumentationRequiresAdjacentComments(t *testing.T) {
+	input := `;Description: This must not attach
+
+proc MyProcedure() {
+}
+`
+	tokens, diagnostics := lexer.Tokenize(input)
+	statements, diagnostics := Parse(tokens, diagnostics)
+	if len(diagnostics) != 0 {
+		t.Fatalf("diagnostics = %#v", diagnostics)
+	}
+	for _, statement := range statements {
+		if definition, ok := statement.Kind.(FunctionStatement); ok {
+			if definition.Description != "" || len(definition.ArgumentDescriptions) != 0 {
+				t.Fatalf("documentation crossed blank line: %#v", definition)
+			}
+			return
+		}
+	}
+	t.Fatal("procedure definition not found")
+}
+
 func TestMalformedInputRecovers(t *testing.T) {
 	inputs := []string{
 		"@\n",

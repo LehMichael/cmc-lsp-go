@@ -14,13 +14,15 @@ import (
 )
 
 type symbolOccurrence struct {
-	Name       string
-	URI        string
-	Range      lspRange
-	Kind       int
-	Detail     string
-	Definition bool
-	Project    string
+	Name          string
+	URI           string
+	Range         lspRange
+	Kind          int
+	Detail        string
+	Documentation string
+	CallableKind  string
+	Definition    bool
+	Project       string
 }
 
 func (server *Lsp) loadProjects(params initializeParams) {
@@ -124,16 +126,16 @@ func occurrences(text, uri, projectPath string) []symbolOccurrence {
 				addExpression(parser.CallExpression(statement))
 			case parser.FunctionStatement:
 				if statement.Identifier != nil {
-					detail := "Function"
+					callableKind := "func"
 					if statement.Kind == parser.Procedure {
-						detail = "Procedure"
+						callableKind = "proc"
 					}
-					if statement.ArgCount == 1 {
-						detail += " with 1 argument"
-					} else {
-						detail += " with " + integerString(statement.ArgCount) + " arguments"
+					before := len(result)
+					addIdentifier(*statement.Identifier, true, 12, callableDetail(callableKind, statement.ArgCount, statement.ArgumentDescriptions))
+					if len(result) > before {
+						result[len(result)-1].Documentation = callableDocumentation(statement.Description, statement.ArgumentDescriptions)
+						result[len(result)-1].CallableKind = callableKind
 					}
-					addIdentifier(*statement.Identifier, true, 12, detail)
 				}
 				addStatements(statement.Body)
 			case parser.IfBlock:
@@ -160,6 +162,30 @@ func occurrences(text, uri, projectPath string) []symbolOccurrence {
 	}
 	addStatements(statements)
 	return result
+}
+
+func callableDetail(kind string, argCount int, arguments []string) string {
+	labels := make([]string, argCount)
+	for index := range labels {
+		labels[index] = "$"
+		if index < len(arguments) && arguments[index] != "" {
+			labels[index] = arguments[index]
+		}
+	}
+	return kind + "(" + strings.Join(labels, ", ") + ")"
+}
+
+func callableDocumentation(description string, arguments []string) string {
+	var sections []string
+	if description != "" {
+		sections = append(sections, description)
+	}
+	for index, argument := range arguments {
+		if argument != "" {
+			sections = append(sections, "Arg"+integerString(index+1)+": `"+argument+"`")
+		}
+	}
+	return strings.Join(sections, "  \n")
 }
 
 func integerString(value int) string {
@@ -245,7 +271,11 @@ func (server *Lsp) handleCompletion(message requestMessage) {
 			completionKind = 3
 			insertText += "()"
 		}
-		items = append(items, completionItem{Label: occurrence.Name, Kind: completionKind, Detail: occurrence.Detail, InsertText: insertText})
+		var documentation *markupContent
+		if occurrence.Documentation != "" {
+			documentation = &markupContent{Kind: "markdown", Value: occurrence.Documentation}
+		}
+		items = append(items, completionItem{Label: occurrence.Name, Kind: completionKind, Detail: occurrence.Detail, Documentation: documentation, InsertText: insertText})
 	}
 	slices.SortFunc(items, func(left, right completionItem) int {
 		return strings.Compare(strings.ToLower(left.Label), strings.ToLower(right.Label))

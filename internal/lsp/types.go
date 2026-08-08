@@ -292,8 +292,14 @@ type documentSymbol struct {
 }
 
 type completionItem struct {
-	Label      string `json:"label"`
-	Kind       int    `json:"kind,omitempty"`
-	Detail     string `json:"detail,omitempty"`
-	InsertText string `json:"insertText,omitempty"`
+	Label         string         `json:"label"`
+	Kind          int            `json:"kind,omitempty"`
+	Detail        string         `json:"detail,omitempty"`
+	Documentation *markupContent `json:"documentation,omitempty"`
+	InsertText    string         `json:"insertText,omitempty"`
+}
+
+type markupContent struct {
+	Kind  string `json:"kind"`
+	Value string `json:"value"`
 }
