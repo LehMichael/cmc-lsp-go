@@ -1,6 +1,6 @@
 # cmc-lsp-go
 
-Language tooling for Siemens Create MyConfig (CMC) scripts (`.upscr`) and script libraries (`.uplib`). The repository provides:
+Language tooling for Siemens Create MyConfig (CMC) scripts (`.upscr`), script libraries (`.uplib`), and data exports (`.tea`). The repository provides:
 
 - `cmc-lsp`: an LSP server over standard input/output
 - `cmc-fmt`: a standalone formatter
@@ -37,6 +37,39 @@ Configure an LSP client with:
 - Language ID: `cmc`
 
 The server supports full document synchronization, live syntax diagnostics, semantic syntax highlighting, whole-document formatting, document/workspace symbols, completion, hover documentation, definitions, and references. It uses UTF-16 positions as required by the default LSP encoding.
+
+### Zed
+
+The [`zed-cmc`](https://github.com/LehMichael/zed-cmc) extension provides a
+native CMC file type and uses
+[`tree-sitter-cmc`](https://github.com/LehMichael/tree-sitter-cmc) for syntax
+highlighting. Install it as a dev extension while it is not yet in Zed's
+extension registry, then use the following settings with a local checkout:
+
+```json
+{
+  "languages": {
+    "Create MyConfig": {
+      "formatter": "language_server",
+      "format_on_save": "on",
+      "semantic_tokens": "combined",
+      "tab_size": 4,
+      "hard_tabs": false
+    }
+  },
+  "lsp": {
+    "cmc-lsp": {
+      "binary": {
+        "path": "/absolute/path/to/cmc-lsp-go/bin/cmc-lsp"
+      }
+    }
+  }
+}
+```
+
+The Tree-sitter layer supplies stable lexical highlighting—including correct
+semicolon comments—while combined semantic tokens refine functions,
+namespaces, parameters, and properties using LSP context.
 
 ### Project and single-file modes
 
