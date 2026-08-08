@@ -21,6 +21,9 @@ type symbolOccurrence struct {
 	Detail        string
 	Documentation string
 	CallableKind  string
+	Description   string
+	Arguments     []string
+	ArgumentCount int
 	Definition    bool
 	Project       string
 }
@@ -135,6 +138,9 @@ func occurrences(text, uri, projectPath string) []symbolOccurrence {
 					if len(result) > before {
 						result[len(result)-1].Documentation = callableDocumentation(statement.Description, statement.ArgumentDescriptions)
 						result[len(result)-1].CallableKind = callableKind
+						result[len(result)-1].Description = statement.Description
+						result[len(result)-1].Arguments = append([]string(nil), statement.ArgumentDescriptions...)
+						result[len(result)-1].ArgumentCount = statement.ArgCount
 					}
 				}
 				addStatements(statement.Body)
@@ -243,6 +249,21 @@ func (server *Lsp) definitionAt(uri, name string) *symbolOccurrence {
 		}
 	}
 	return nil
+}
+
+func (server *Lsp) callableDefinitionAt(uri, name string) *symbolOccurrence {
+	var result *symbolOccurrence
+	for _, occurrence := range server.scopedOccurrences(uri) {
+		if !occurrence.Definition || occurrence.CallableKind == "" || !strings.EqualFold(occurrence.Name, name) {
+			continue
+		}
+		if result != nil {
+			return nil
+		}
+		copy := occurrence
+		result = &copy
+	}
+	return result
 }
 
 func (server *Lsp) handleCompletion(message requestMessage) {

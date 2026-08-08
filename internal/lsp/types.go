@@ -303,3 +303,20 @@ type markupContent struct {
 	Kind  string `json:"kind"`
 	Value string `json:"value"`
 }
+
+type signatureHelp struct {
+	Signatures      []signatureInformation `json:"signatures"`
+	ActiveSignature int                    `json:"activeSignature,omitempty"`
+	ActiveParameter int                    `json:"activeParameter,omitempty"`
+}
+
+type signatureInformation struct {
+	Label         string                 `json:"label"`
+	Documentation *markupContent         `json:"documentation,omitempty"`
+	Parameters    []parameterInformation `json:"parameters,omitempty"`
+}
+
+type parameterInformation struct {
+	Label         string         `json:"label"`
+	Documentation *markupContent `json:"documentation,omitempty"`
+}

@@ -191,8 +191,12 @@ func (server *Lsp) handleRequest(message requestMessage) {
 				"documentSymbolProvider":     true,
 				"definitionProvider":         true,
 				"referencesProvider":         true,
-				"workspaceSymbolProvider":    true,
-				"hoverProvider":              true,
+				"workspaceSymbolProvider": true,
+				"hoverProvider":           true,
+				"signatureHelpProvider": map[string]any{
+					"triggerCharacters":   []string{"(", ","},
+					"retriggerCharacters": []string{","},
+				},
 				"semanticTokensProvider": map[string]any{
 					"legend": map[string]any{
 						"tokenTypes":     semanticTokenTypes,
@@ -221,6 +225,8 @@ func (server *Lsp) handleRequest(message requestMessage) {
 		server.handleDefinition(message)
 	case "textDocument/references":
 		server.handleReferences(message)
+	case "textDocument/signatureHelp":
+		server.handleSignatureHelp(message)
 	case "textDocument/semanticTokens/full":
 		server.handleSemanticTokens(message)
 	case "workspace/symbol":

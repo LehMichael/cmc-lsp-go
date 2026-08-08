@@ -68,6 +68,9 @@ func TestServerDocumentLifecycleAndFormatting(t *testing.T) {
 	if capabilities["semanticTokensProvider"] == nil {
 		t.Fatalf("semantic token capability missing: %#v", capabilities)
 	}
+	if capabilities["signatureHelpProvider"] == nil {
+		t.Fatalf("signature help capability missing: %#v", capabilities)
+	}
 
 	firstDiagnostics := got[1]["params"].(map[string]any)["diagnostics"].([]any)
 	if len(firstDiagnostics) != 0 {
