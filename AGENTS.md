@@ -7,14 +7,16 @@ unless the language explicitly distinguishes library definitions.
 
 ## Language references
 
-The canonical bundled reference is:
+The bundled references are:
 
-- `docs/reference/840Dsl_Create_MyConfig_op_man_en-US.txt` for fast `rg`
-  searches and text extraction.
-- `docs/reference/840Dsl_Create_MyConfig_op_man_en-US.pdf` when table layout,
-  figures, or extraction ambiguity matters.
+- `docs/reference/ONE_Create_MyConfig_op_man_0626_en-US.txt` and the adjacent
+  German edition for current language behavior and localized descriptions.
+- `docs/reference/840Dsl_Create_MyConfig_op_man_en-US.txt` and the adjacent
+  German edition for legacy behavior and details omitted by the newer manual.
+- The matching PDFs when table layout, figures, or extraction ambiguity
+  matters.
 
-Useful manual locations include:
+Useful 06/2019 manual locations include:
 
 - Sections 6.3.8.5-6.3.8.6 (printed pages 94-98): Diff system variables.
 - Pages 419-420: `func`/`proc` documentation comments.
@@ -26,6 +28,12 @@ The official searchable HTML edition is available from Siemens at
 It contains separate `de-DE` and `en-US` topics and is useful when extracting
 localized table entries. Do not infer undocumented CMC semantics solely from
 identifier names; prefer the manual and clearly label fallbacks.
+
+The 06/2026 manual moves the CMC language to chapter 6. Its sections 6.16 and
+6.17 document XML and PLC ConfigData functions that are absent from the older
+manual. The English 6.16.6 heading and both editions' `RemoveXmlElement`
+signature contain known copy/paste errors; use the German heading and call
+examples to resolve them.
 
 The committed `DataBase` directory is a replaceable, Siemens-supplied catalog
 of NC, drive, and system parameter descriptions. Preserve the ability to
