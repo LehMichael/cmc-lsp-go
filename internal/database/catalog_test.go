@@ -3,6 +3,7 @@ package database
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -51,6 +52,16 @@ func TestLoadLookupAndLocale(t *testing.T) {
 	}
 	if got := germanCatalog.Lookup("$MN_AXCONF_MACHAX_NAME_TAB"); len(got) != 1 || got[0].Brief != "Maschinenachsname" {
 		t.Fatalf("German machine data = %#v", got)
+	}
+}
+
+func TestDatabaseCandidatesInAncestors(t *testing.T) {
+	root := t.TempDir()
+	binaryDirectory := filepath.Join(root, "cmc-lsp-go", "bin")
+	candidates := databaseCandidatesInAncestors(binaryDirectory)
+	want := filepath.Join(root, "cmc-lsp-go", "DataBase")
+	if !slices.Contains(candidates, want) {
+		t.Fatalf("candidates = %#v, missing %q", candidates, want)
 	}
 }
 

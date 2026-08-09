@@ -63,3 +63,14 @@ func TestParameterDatabaseHover(t *testing.T) {
 		t.Fatalf("hover = %q", response.Result.Contents.Value)
 	}
 }
+
+func TestBundledParameterDatabaseHover(t *testing.T) {
+	catalog, err := database.Load(filepath.Join("..", "..", "DataBase"), "de-DE")
+	if err != nil {
+		t.Fatal(err)
+	}
+	hover, ok := catalog.Hover("$MA_NUM_ENCS")
+	if !ok || hover == "" {
+		t.Fatalf("bundled machine-data hover = %q, %v", hover, ok)
+	}
+}

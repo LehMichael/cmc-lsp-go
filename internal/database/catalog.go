@@ -72,23 +72,13 @@ func Locate(roots []string, configured string) string {
 		candidates = append(candidates, configured)
 	}
 	for _, root := range roots {
-		absolute, err := filepath.Abs(root)
-		if err != nil {
-			continue
-		}
-		for current := absolute; ; current = filepath.Dir(current) {
-			candidates = append(candidates, filepath.Join(current, "DataBase"))
-			parent := filepath.Dir(current)
-			if parent == current {
-				break
-			}
-		}
+		candidates = append(candidates, databaseCandidatesInAncestors(root)...)
 	}
 	if executable, err := os.Executable(); err == nil {
-		candidates = append(candidates, filepath.Join(filepath.Dir(executable), "DataBase"))
+		candidates = append(candidates, databaseCandidatesInAncestors(filepath.Dir(executable))...)
 	}
 	if current, err := os.Getwd(); err == nil {
-		candidates = append(candidates, filepath.Join(current, "DataBase"))
+		candidates = append(candidates, databaseCandidatesInAncestors(current)...)
 	}
 
 	seen := map[string]struct{}{}
@@ -103,6 +93,21 @@ func Locate(roots []string, configured string) string {
 		}
 	}
 	return ""
+}
+
+func databaseCandidatesInAncestors(path string) []string {
+	absolute, err := filepath.Abs(path)
+	if err != nil {
+		return nil
+	}
+	var candidates []string
+	for current := absolute; ; current = filepath.Dir(current) {
+		candidates = append(candidates, filepath.Join(current, "DataBase"))
+		parent := filepath.Dir(current)
+		if parent == current {
+			return candidates
+		}
+	}
 }
 
 func (catalog *Catalog) Count() int {
