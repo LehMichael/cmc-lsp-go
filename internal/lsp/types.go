@@ -238,9 +238,11 @@ type documentParams struct {
 type formattingParams struct {
 	TextDocument textDocumentIdentifier `json:"textDocument"`
 	Options      struct {
-		TabSize          int  `json:"tabSize"`
-		InsertSpaces     bool `json:"insertSpaces"`
-		CMCCommentSpaces int  `json:"cmcCommentSpaces,omitempty"`
+		TabSize                        int   `json:"tabSize"`
+		InsertSpaces                   bool  `json:"insertSpaces"`
+		CMCCommentSpaces               int   `json:"cmcCommentSpaces,omitempty"`
+		CMCAlignConsecutiveAssignments *bool `json:"cmcAlignConsecutiveAssignments,omitempty"`
+		CMCAlignTrailingComments       *bool `json:"cmcAlignTrailingComments,omitempty"`
 	} `json:"options"`
 }
 

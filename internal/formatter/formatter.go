@@ -3,18 +3,33 @@ package formatter
 
 import (
 	"strings"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/lehmichael/cmc-lsp-go/internal/lexer"
 )
 
 type Options struct {
-	TabSize       int
-	InsertSpaces  bool
-	CommentSpaces int
+	TabSize                     int
+	InsertSpaces                bool
+	CommentSpaces               int
+	AlignConsecutiveAssignments bool
+	AlignTrailingComments       bool
 }
 
 func DefaultOptions() Options {
-	return Options{TabSize: 4, InsertSpaces: true, CommentSpaces: 2}
+	return Options{
+		TabSize: 4, InsertSpaces: true, CommentSpaces: 2,
+		AlignConsecutiveAssignments: true,
+		AlignTrailingComments:       true,
+	}
+}
+
+type formattedLine struct {
+	text             string
+	indent           int
+	assignmentOffset int
+	commentOffset    int
 }
 
 // Format normalizes indentation and intra-line whitespace while preserving
@@ -31,7 +46,7 @@ func Format(input string, options Options) string {
 	}
 
 	tokens, _ := lexer.Tokenize(input)
-	var lines []string
+	var lines []formattedLine
 	var line []lexer.Token
 	indent := 0
 
@@ -59,12 +74,23 @@ func Format(input string, options Options) string {
 		}
 	}
 
-	return strings.Join(lines, "\n") + "\n"
+	if options.AlignConsecutiveAssignments {
+		alignConsecutive(lines, options.TabSize, func(line formattedLine) int { return line.assignmentOffset })
+	}
+	if options.AlignTrailingComments {
+		alignConsecutive(lines, options.TabSize, func(line formattedLine) int { return line.commentOffset })
+	}
+	result := make([]string, len(lines))
+	for index := range lines {
+		result[index] = lines[index].text
+	}
+	return strings.Join(result, "\n") + "\n"
 }
 
-func formatLine(tokens []lexer.Token, indent int, options Options) string {
+func formatLine(tokens []lexer.Token, indent int, options Options) formattedLine {
+	line := formattedLine{indent: indent, assignmentOffset: -1, commentOffset: -1}
 	if len(tokens) == 0 {
-		return ""
+		return line
 	}
 
 	var result strings.Builder
@@ -74,13 +100,78 @@ func formatLine(tokens []lexer.Token, indent int, options Options) string {
 		result.WriteString(strings.Repeat("\t", indent))
 	}
 
+	hasCode := false
 	for i, token := range tokens {
 		if i > 0 {
 			result.WriteString(separator(tokens, i, options))
 		}
+		if isAssignmentOperator(token.Kind) && line.assignmentOffset < 0 {
+			line.assignmentOffset = result.Len()
+		}
+		if token.Kind == lexer.Comment && hasCode {
+			line.commentOffset = result.Len()
+		}
 		result.WriteString(token.Lexeme)
+		if token.Kind != lexer.Comment {
+			hasCode = true
+		}
 	}
-	return strings.TrimRight(result.String(), " \t")
+	line.text = strings.TrimRight(result.String(), " \t")
+	return line
+}
+
+func alignConsecutive(lines []formattedLine, tabSize int, offset func(formattedLine) int) {
+	for start := 0; start < len(lines); {
+		if offset(lines[start]) < 0 {
+			start++
+			continue
+		}
+		end := start + 1
+		for end < len(lines) && offset(lines[end]) >= 0 && lines[end].indent == lines[start].indent {
+			end++
+		}
+		if end-start > 1 {
+			target := 0
+			for index := start; index < end; index++ {
+				column := visualWidth(lines[index].text[:offset(lines[index])], tabSize)
+				if column > target {
+					target = column
+				}
+			}
+			for index := start; index < end; index++ {
+				at := offset(lines[index])
+				padding := target - visualWidth(lines[index].text[:at], tabSize)
+				if padding == 0 {
+					continue
+				}
+				lines[index].text = lines[index].text[:at] + strings.Repeat(" ", padding) + lines[index].text[at:]
+				if lines[index].assignmentOffset >= at {
+					lines[index].assignmentOffset += padding
+				}
+				if lines[index].commentOffset >= at {
+					lines[index].commentOffset += padding
+				}
+			}
+		}
+		start = end
+	}
+}
+
+func visualWidth(value string, tabSize int) int {
+	column := 0
+	for len(value) > 0 {
+		character, size := utf8.DecodeRuneInString(value)
+		value = value[size:]
+		switch {
+		case character == '\t':
+			column += tabSize - column%tabSize
+		case unicode.Is(unicode.Mn, character) || unicode.Is(unicode.Me, character) || unicode.Is(unicode.Cf, character):
+			// Combining and formatting characters do not advance the display column.
+		default:
+			column++
+		}
+	}
+	return column
 }
 
 func separator(tokens []lexer.Token, index int, options Options) string {
@@ -186,6 +277,18 @@ func isOperator(kind lexer.TokenKind) bool {
 		lexer.OperatorLogAnd, lexer.OperatorLogOr, lexer.OperatorStringConcat,
 		lexer.OperatorAdd, lexer.OperatorSubtract, lexer.OperatorMultiply,
 		lexer.OperatorDivide, lexer.OperatorAnd, lexer.OperatorOr, lexer.OperatorNegate:
+		return true
+	default:
+		return false
+	}
+}
+
+func isAssignmentOperator(kind lexer.TokenKind) bool {
+	switch kind {
+	case lexer.OperatorAssign, lexer.OperatorAssignRaw, lexer.OperatorAssignIfBlank,
+		lexer.OperatorAddAssign, lexer.OperatorSubtractAssign, lexer.OperatorMultiplyAssign,
+		lexer.OperatorDivideAssign, lexer.OperatorOrAssign, lexer.OperatorAndAssign,
+		lexer.OperatorDelete:
 		return true
 	default:
 		return false

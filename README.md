@@ -103,7 +103,7 @@ Check formatting without changing files:
 cmc-fmt -check script.upscr
 ```
 
-The default style uses four spaces per nesting level, spaces around operators, one space after commas, and two spaces before trailing comments. Use `-tab-size`, `-tabs`, or `-comment-spaces` to customize the CLI. LSP formatting honors the editor's `tabSize` and `insertSpaces` settings and accepts the optional `cmcCommentSpaces` formatting property.
+The default style uses four spaces per nesting level, spaces around operators, one space after commas, two spaces before trailing comments, and aligns consecutive assignments and trailing comments. Use `-tab-size`, `-tabs`, `-comment-spaces`, `-align-consecutive-assignments`, or `-align-trailing-comments` to customize the CLI. Boolean flags can be disabled with `-flag=false`. LSP formatting honors the editor's `tabSize` and `insertSpaces` settings and accepts the optional `cmcCommentSpaces`, `cmcAlignConsecutiveAssignments`, and `cmcAlignTrailingComments` formatting properties.
 
 ## Project validation
 

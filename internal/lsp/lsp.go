@@ -260,6 +260,12 @@ func (server *Lsp) handleFormatting(message requestMessage) {
 	if params.Options.CMCCommentSpaces > 0 {
 		options.CommentSpaces = params.Options.CMCCommentSpaces
 	}
+	if params.Options.CMCAlignConsecutiveAssignments != nil {
+		options.AlignConsecutiveAssignments = *params.Options.CMCAlignConsecutiveAssignments
+	}
+	if params.Options.CMCAlignTrailingComments != nil {
+		options.AlignTrailingComments = *params.Options.CMCAlignTrailingComments
+	}
 	formatted := formatter.Format(text, options)
 	if formatted == text {
 		server.respond(message.ID, []textEdit{}, nil)

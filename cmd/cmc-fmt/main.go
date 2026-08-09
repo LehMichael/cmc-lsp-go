@@ -16,12 +16,16 @@ func main() {
 	tabSize := flag.Int("tab-size", 4, "indentation width")
 	useTabs := flag.Bool("tabs", false, "indent with tabs")
 	commentSpaces := flag.Int("comment-spaces", 2, "spaces before a trailing comment")
+	alignAssignments := flag.Bool("align-consecutive-assignments", true, "align operators in consecutive assignments")
+	alignComments := flag.Bool("align-trailing-comments", true, "align comments on consecutive code lines")
 	flag.Parse()
 
 	options := formatter.DefaultOptions()
 	options.TabSize = *tabSize
 	options.InsertSpaces = !*useTabs
 	options.CommentSpaces = *commentSpaces
+	options.AlignConsecutiveAssignments = *alignAssignments
+	options.AlignTrailingComments = *alignComments
 
 	if flag.NArg() == 0 {
 		if *write {
