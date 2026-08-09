@@ -49,3 +49,23 @@ func TestAnalyzeMissingAndCircularIncludes(t *testing.T) {
 		t.Fatalf("expected missing and circular include diagnostics, got %#v", diagnostics)
 	}
 }
+
+func TestAnalyzeStringReplacements(t *testing.T) {
+	directory := t.TempDir()
+	root := filepath.Join(directory, "main.upscr")
+	contents := "Up.path = \"base\"\nUp.result = \"$(Up.path)/file.tea\"\n"
+	if err := os.WriteFile(root, []byte(contents), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	symbols, diagnostics := Analyze(root, workspace.NewOverlay())
+	if len(diagnostics) != 0 {
+		t.Fatalf("unexpected diagnostics: %#v", diagnostics)
+	}
+	if len(symbols) != 3 {
+		t.Fatalf("got %d symbols, want two assignments and one string replacement", len(symbols))
+	}
+	if symbols[2].Identifier.Range.Start.Line != 1 || symbols[2].Identifier.Range.Start.Column != 15 {
+		t.Fatalf("replacement range = %#v", symbols[2].Identifier.Range)
+	}
+}

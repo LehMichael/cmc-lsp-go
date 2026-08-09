@@ -124,6 +124,12 @@ func resolveExpression(ex parser.ExpressionKind, ssw *parser.SectionSwitchKind) 
 			Identifier: ie,
 			Section:    ssw,
 		}}
+	} else if se, ok := ex.(parser.InterpolatedStringLiteral); ok {
+		ret := make([]Symbol, 0, len(se.Replacements))
+		for _, replacement := range se.Replacements {
+			ret = append(ret, Symbol{Identifier: replacement, Section: ssw})
+		}
+		return ret
 	} else if ce, ok := ex.(parser.CallExpression); ok {
 		ret := []Symbol{{
 			Identifier: ce.Identifier,
