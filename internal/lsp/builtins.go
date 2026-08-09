@@ -91,6 +91,10 @@ func germanCallableKind(kind string) string {
 		return "Prozedur"
 	case "Instruction":
 		return "Anweisung"
+	case "Standard-library function":
+		return "Standardbibliotheksfunktion"
+	case "Standard-library procedure":
+		return "Standardbibliotheksprozedur"
 	default:
 		return kind
 	}
@@ -119,6 +123,46 @@ var builtinCallables = []builtinCallableDocumentation{
 		English:   "Selects the NC channel for subsequent unqualified NC data access. It is the long form of a `[C<n>]` section selector.",
 		German:    "W\u00e4hlt den NC-Kanal f\u00fcr nachfolgende unqualifizierte NC-Datenzugriffe. Dies ist die Langform der Bereichsangabe `[C<n>]`.",
 		Manual:    "section 7.8.4",
+	},
+	{
+		Name:      "SinamicsTecActivate",
+		Signature: `SinamicsTecActivate("<TECNAME>", <DoVar>)`,
+		Kind:      "Standard-library procedure",
+		English:   "Activates a SINAMICS technological function on the specified drive object. The technology name must correspond to parameter `p4955[x]`.",
+		German:    "Aktiviert eine technologische SINAMICS-Funktion auf dem angegebenen Drive Object. Der Technologiefunktionsname muss dem Parameter `p4955[x]` entsprechen.",
+		Manual:    "section 6.6.1.2",
+	},
+	{
+		Name:      "SinamicsTecDeactivate",
+		Signature: `SinamicsTecDeactivate("<TECNAME>", <DoVar>)`,
+		Kind:      "Standard-library procedure",
+		English:   "Deactivates a SINAMICS technological function on the specified drive object.",
+		German:    "Deaktiviert eine technologische SINAMICS-Funktion auf dem angegebenen Drive Object.",
+		Manual:    "section 6.6.1.3",
+	},
+	{
+		Name:      "IsBit",
+		Signature: "IsBit(<bit>, <value>)",
+		Kind:      "Standard-library function",
+		English:   "Returns `true` when the zero-based bit is set in the supplied value, otherwise `false`.",
+		German:    "Gibt `true` zur\u00fcck, wenn das nullbasiert gez\u00e4hlte Bit im angegebenen Wert gesetzt ist, andernfalls `false`.",
+		Manual:    "section 6.6.2.2",
+	},
+	{
+		Name:      "SetBit",
+		Signature: "SetBit(<bit>, <value>)",
+		Kind:      "Standard-library function",
+		English:   "Returns the supplied value with the zero-based bit set to `1`.",
+		German:    "Gibt den angegebenen Wert mit dem nullbasiert gez\u00e4hlten Bit auf `1` gesetzt zur\u00fcck.",
+		Manual:    "section 6.6.2.3",
+	},
+	{
+		Name:      "ClrBit",
+		Signature: "ClrBit(<bit>, <value>)",
+		Kind:      "Standard-library function",
+		English:   "Returns the supplied value with the zero-based bit reset to `0`.",
+		German:    "Gibt den angegebenen Wert mit dem nullbasiert gez\u00e4hlten Bit auf `0` zur\u00fcckgesetzt zur\u00fcck.",
+		Manual:    "section 6.6.2.4",
 	},
 	{
 		Name:      "StringLen",
@@ -223,6 +267,110 @@ var builtinCallables = []builtinCallableDocumentation{
 		English:   "Appends a string to a file, creating the file when it does not yet exist.",
 		German:    "H\u00e4ngt eine Zeichenkette an eine Datei an und erzeugt die Datei, falls sie noch nicht existiert.",
 		Manual:    "section 7.8.14.8",
+	},
+	{
+		Name:      "AddXmlElement",
+		Signature: `AddXmlElement(<area>, "<path>", "<xpath_expression>", "<NewElement>")`,
+		Kind:      "Function",
+		English:   "Appends a new XML element as the last child of the element selected by XPath. Returns `0` on success or an error code.",
+		German:    "F\u00fcgt ein neues XML-Element als letztes Unterelement des per XPath ausgew\u00e4hlten Elements ein. Gibt bei Erfolg `0`, andernfalls einen Fehlercode zur\u00fcck.",
+		Manual:    "section 6.16.1",
+	},
+	{
+		Name:      "InsertXmlElement",
+		Signature: `InsertXmlElement(<area>, "<path>", "<xpath_expression>", <index>, "<NewElement>")`,
+		Kind:      "Function",
+		English:   "Inserts a new XML element below the indexed element selected by XPath. An index beyond the matches selects the last position. Returns `0` on success or an error code.",
+		German:    "F\u00fcgt ein neues XML-Element unter dem per XPath und Index ausgew\u00e4hlten Element ein. Ein Index au\u00dferhalb der Treffer w\u00e4hlt die letzte Position. Gibt bei Erfolg `0`, andernfalls einen Fehlercode zur\u00fcck.",
+		Manual:    "section 6.16.2",
+	},
+	{
+		Name:      "GetXmlElement",
+		Signature: `GetXmlElement(<area>, "<path>", "<xpath_expression>")`,
+		Kind:      "Function",
+		English:   "Returns the complete matching XML elements, including their content, selected by XPath.",
+		German:    "Gibt die vollst\u00e4ndigen, per XPath ausgew\u00e4hlten XML-Elemente einschlie\u00dflich ihres Inhalts zur\u00fcck.",
+		Manual:    "section 6.16.3",
+	},
+	{
+		Name:      "GetXmlElementText",
+		Signature: `GetXmlElementText(<area>, "<path>", "<xpath_expression>")`,
+		Kind:      "Function",
+		English:   "Returns the text values of all XML elements selected by XPath, separated by line breaks.",
+		German:    "Gibt die Textwerte aller per XPath ausgew\u00e4hlten XML-Elemente durch Zeilenumbr\u00fcche getrennt zur\u00fcck.",
+		Manual:    "section 6.16.4",
+	},
+	{
+		Name:      "GetXmlAttribute",
+		Signature: `GetXmlAttribute(<area>, "<path>", "<xpath_expression>", "<attribute_name>")`,
+		Kind:      "Function",
+		English:   "Returns the named attribute values from all XML elements selected by XPath, separated by line breaks.",
+		German:    "Gibt die Werte des benannten Attributs aus allen per XPath ausgew\u00e4hlten XML-Elementen durch Zeilenumbr\u00fcche getrennt zur\u00fcck.",
+		Manual:    "section 6.16.5",
+	},
+	{
+		Name:      "SetXmlElementText",
+		Signature: `SetXmlElementText(<area>, "<path>", "<xpath_expression>", "<value>")`,
+		Kind:      "Function",
+		English:   "Writes text into every XML element selected by XPath. Returns `0` on success or an error code.",
+		German:    "Schreibt Text in jedes per XPath ausgew\u00e4hlte XML-Element. Gibt bei Erfolg `0`, andernfalls einen Fehlercode zur\u00fcck.",
+		Manual:    "section 6.16.6",
+	},
+	{
+		Name:      "SetXmlAttribute",
+		Signature: `SetXmlAttribute(<area>, "<path>", "<xpath_expression>", "<attribute_name>", "<value>")`,
+		Kind:      "Function",
+		English:   "Sets the named attribute on every XML element selected by XPath, adding the attribute when necessary. Returns `0` on success or an error code.",
+		German:    "Setzt das benannte Attribut an jedem per XPath ausgew\u00e4hlten XML-Element und f\u00fcgt es bei Bedarf hinzu. Gibt bei Erfolg `0`, andernfalls einen Fehlercode zur\u00fcck.",
+		Manual:    "section 6.16.7",
+	},
+	{
+		Name:      "RemoveXmlElement",
+		Signature: `RemoveXmlElement(<area>, "<path>", "<xpath_expression>")`,
+		Kind:      "Function",
+		English:   "Removes every XML element selected by XPath. Returns `0` on success or an error code.",
+		German:    "Entfernt jedes per XPath ausgew\u00e4hlte XML-Element. Gibt bei Erfolg `0`, andernfalls einen Fehlercode zur\u00fcck.",
+		Manual:    "section 6.16.8; signature corrected from the manual example",
+	},
+	{
+		Name:      "RemoveXmlAttribute",
+		Signature: `RemoveXmlAttribute(<area>, "<path>", "<xpath_expression>", "<attribute_name>")`,
+		Kind:      "Function",
+		English:   "Removes the named attribute from every XML element selected by XPath. Returns `0` on success or an error code.",
+		German:    "Entfernt das benannte Attribut aus jedem per XPath ausgew\u00e4hlten XML-Element. Gibt bei Erfolg `0`, andernfalls einen Fehlercode zur\u00fcck.",
+		Manual:    "section 6.16.9",
+	},
+	{
+		Name:      "ConfigDataItemExists",
+		Signature: `ConfigDataItemExists("<dbName>", "<itemName>")`,
+		Kind:      "Function",
+		English:   "Checks whether an item exists in the PLC configuration data. Returns `0` when it exists, otherwise an error code.",
+		German:    "Pr\u00fcft, ob ein Element in den PLC-Konfigurationsdaten existiert. Gibt bei vorhandenem Element `0`, andernfalls einen Fehlercode zur\u00fcck.",
+		Manual:    "section 6.17.1",
+	},
+	{
+		Name:      "ReadConfigDataItem",
+		Signature: `ReadConfigDataItem("<dbName>", "<itemName>")`,
+		Kind:      "Function",
+		English:   "Returns the content of a PLC configuration-data item. A missing item or unavailable configuration data produces an empty string.",
+		German:    "Gibt den Inhalt eines Elements der PLC-Konfigurationsdaten zur\u00fcck. Bei einem fehlenden Element oder nicht verf\u00fcgbaren Konfigurationsdaten wird eine leere Zeichenkette geliefert.",
+		Manual:    "section 6.17.2",
+	},
+	{
+		Name:      "SetConfigDataItem",
+		Signature: `SetConfigDataItem("<dbName>", "<itemName>", "<itemType>", "<value>")`,
+		Kind:      "Function",
+		English:   "Changes or creates an item in the working copy of the PLC configuration data. Returns `0` on success or an error code.",
+		German:    "\u00c4ndert oder erzeugt ein Element in der Arbeitskopie der PLC-Konfigurationsdaten. Gibt bei Erfolg `0`, andernfalls einen Fehlercode zur\u00fcck.",
+		Manual:    "section 6.17.3",
+	},
+	{
+		Name:      "RemoveConfigDataItem",
+		Signature: `RemoveConfigDataItem("<dbName>", "<itemName>")`,
+		Kind:      "Function",
+		English:   "Removes an item from the PLC configuration-data update set without deleting it directly from the PLC. Returns `0` on success or an error code.",
+		German:    "Entfernt ein Element aus dem Aktualisierungssatz der PLC-Konfigurationsdaten, ohne es direkt aus der PLC zu l\u00f6schen. Gibt bei Erfolg `0`, andernfalls einen Fehlercode zur\u00fcck.",
+		Manual:    "section 6.17.4",
 	},
 	{
 		Name:      "Msg",

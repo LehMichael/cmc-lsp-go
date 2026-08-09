@@ -96,7 +96,7 @@ When the workspace contains a `.upproj` file, the server reads its XML and resol
 
 Files that are not referenced by a `.upproj` remain in single-file mode and do not inherit unrelated project symbols. `.tea` data files and `.upact` action files are parsed and formatted as regular CMC scripts.
 
-Hover documentation covers the language-provided functions and procedures from manual section 7.8, including signatures, behavior, and compatibility aliases. German LSP client locales receive German descriptions. Completion recommends the current callable names and omits deprecated aliases.
+Hover documentation covers the language-provided functions and procedures from the current and legacy manuals, including XML and PLC ConfigData operations, Siemens standard-library callables, signatures, behavior, and compatibility aliases. German LSP client locales receive German descriptions. Completion recommends the current callable names and omits deprecated aliases.
 
 ### Siemens parameter database
 

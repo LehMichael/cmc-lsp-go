@@ -11,8 +11,11 @@ import (
 func TestBuiltinCallableCatalogCoversManualSection(t *testing.T) {
 	want := []string{
 		"CHANDATA",
+		"SinamicsTecActivate", "SinamicsTecDeactivate", "IsBit", "SetBit", "ClrBit",
 		"StringLen", "StringMatch", "StringPos", "StringReplace", "StringSubStr",
 		"FileCopy", "FileDelete", "FileExist", "FileRead", "FileWrite", "QueryIni", "QueryXml", "TraceToFile",
+		"AddXmlElement", "InsertXmlElement", "GetXmlElement", "GetXmlElementText", "GetXmlAttribute", "SetXmlElementText", "SetXmlAttribute", "RemoveXmlElement", "RemoveXmlAttribute",
+		"ConfigDataItemExists", "ReadConfigDataItem", "SetConfigDataItem", "RemoveConfigDataItem",
 		"Msg", "Warning", "Error", "Input", "InputChoice", "InputEnum", "InputInt", "InputReal", "InputText", "InputUInt",
 		"ResFile", "ResText",
 		"Skip", "Redo", "Return", "ExtCall", "DateTime", "DOVar", "Log", "Logging", "MathRound", "Version",
@@ -43,6 +46,9 @@ func TestBuiltinCallableHoverUsesClientLocale(t *testing.T) {
 	}{
 		{name: "ExtCall", locale: "en-US", want: []string{"Procedure", "external UTF-8 manipulation task", "section 7.8.17.4"}},
 		{name: "filewrite", locale: "de-AT", want: []string{"Prozedur", "Schreibt eine Zeichenkette", "section 7.8.14.5"}},
+		{name: "SetXmlElementText", locale: "de-DE", want: []string{"Funktion", "Schreibt Text", "section 6.16.6"}},
+		{name: "RemoveXmlElement", locale: "en-US", want: []string{"RemoveXmlElement(<area>", "Removes every XML element", "signature corrected"}},
+		{name: "SetBit", locale: "de-AT", want: []string{"Standardbibliotheksfunktion", "Bit auf `1`", "section 6.6.2.3"}},
 		{name: "Match", locale: "de-DE", want: []string{"Match(\"<string>\"", "Veralteter Kompatibilit\u00e4tsname", "`StringMatch`"}},
 	}
 	for _, test := range tests {
@@ -70,7 +76,7 @@ func TestBuiltinCallableCompletionIncludesAllCurrentNames(t *testing.T) {
 			t.Errorf("completion %s has no markdown documentation", item.Label)
 		}
 	}
-	for _, name := range []string{"ExtCall", "FileWrite", "QueryIni", "ResText", "Prepare"} {
+	for _, name := range []string{"ExtCall", "FileWrite", "QueryIni", "ResText", "Prepare", "GetXmlElementText", "SetConfigDataItem", "IsBit"} {
 		if !labels[name] {
 			t.Errorf("missing completion for %s", name)
 		}
