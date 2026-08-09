@@ -100,6 +100,13 @@ In single-file mode, the server discovers `.uplib` libraries beside the active s
 
 Hover documentation covers the language-provided functions and procedures from the current and legacy manuals, including XML and PLC ConfigData operations, Siemens standard-library callables, signatures, behavior, and compatibility aliases. German LSP client locales receive German descriptions. Completion recommends the current callable names and omits deprecated aliases.
 
+The current manual's section 8.9 system variables are also documented on
+hover. This includes `Up.$Pack`, all current dialog fields and enumeration
+values, indexed language-archive entries, `Up.$Step[...]` and dialog-scoped
+steps, `Up.$AccessLevelPWDConfig`, `Up.$BasicSecSettings`, and `Up.$Env`.
+Indexed IDs are matched independently of their concrete value, and German LSP
+client locales receive the corresponding German descriptions.
+
 ### Siemens parameter database
 
 If a Siemens `DataBase` directory is present in the workspace or one of its parent directories, the server loads its `.mdat`, `.svar`, and `.para` XML files at startup. Hover then shows the supplied descriptions for NC machine/setting data, system variables, and SINAMICS `p`/`r` parameters. The files are parsed directly, so the database can be updated by replacing the directory.

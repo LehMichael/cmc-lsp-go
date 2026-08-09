@@ -20,12 +20,15 @@ func systemVariableHover(identifier, locale string) (string, bool) {
 		return "", false
 	}
 	documentation, ok := systemVariableDocumentationByName[key]
+	if !ok {
+		documentation, ok = patternedSystemVariableDocumentation(key)
+	}
 	if !ok && strings.HasPrefix(key, "up.$dialog.") {
 		leaf := key[strings.LastIndex(key, ".")+1:]
 		documentation, ok = dialogPropertyDocumentation[leaf]
 	}
 	if !ok {
-		for _, root := range []string{"up.$pack", "up.$dialog", "up.$step", "up.$env", "up.$script"} {
+		for _, root := range []string{"up.$pack", "up.$dialog", "up.$step", "up.$env", "up.$script", "up.$accesslevelpwdconfig", "up.$basicsecsettings"} {
 			if key == root || strings.HasPrefix(key, root+".") || strings.HasPrefix(key, root+"[") {
 				documentation, ok = systemVariableDocumentationByName[root]
 				break
@@ -43,7 +46,11 @@ func systemVariableHover(identifier, locale string) (string, bool) {
 		metadata = append(metadata, "Type: `"+documentation.Type+"`")
 	}
 	if documentation.Access != "" {
-		metadata = append(metadata, documentation.Access)
+		access := documentation.Access
+		if isGermanLocale(locale) && access == "Read-only" {
+			access = "Schreibgesch\u00fctzt"
+		}
+		metadata = append(metadata, access)
 	}
 	if len(metadata) > 0 {
 		result.WriteString("\n\n")
@@ -94,17 +101,42 @@ func systemVariableAt(text string, target position) string {
 
 func canonicalSystemVariable(identifier string) string {
 	key := strings.ToLower(strings.TrimSpace(identifier))
-	if start := strings.Index(key, "up.$step["); start >= 0 {
-		contentStart := start + len("up.$step[")
-		if end := strings.IndexByte(key[contentStart:], ']'); end >= 0 {
-			end += contentStart
-			key = key[:contentStart] + "?" + key[end:]
+	var result strings.Builder
+	for start := 0; start < len(key); {
+		open := strings.IndexByte(key[start:], '[')
+		if open < 0 {
+			result.WriteString(key[start:])
+			break
 		}
+		open += start
+		result.WriteString(key[start : open+1])
+		close := strings.IndexByte(key[open+1:], ']')
+		if close < 0 {
+			result.WriteString(key[open+1:])
+			break
+		}
+		close += open + 1
+		result.WriteByte('?')
+		result.WriteByte(']')
+		start = close + 1
 	}
-	return key
+	return result.String()
 }
 
-var systemVariableDocumentationByName = map[string]systemVariableDocumentation{
+func patternedSystemVariableDocumentation(key string) (systemVariableDocumentation, bool) {
+	if !strings.HasPrefix(key, "up.$dialog.") {
+		return systemVariableDocumentation{}, false
+	}
+	step := strings.Index(key, ".step[?]")
+	if step < 0 {
+		return systemVariableDocumentation{}, false
+	}
+	pattern := "up.$dialog.?.step[?]" + key[step+len(".step[?]"):]
+	documentation, ok := systemVariableDocumentationByName[pattern]
+	return documentation, ok
+}
+
+var legacySystemVariableDocumentationByName = map[string]systemVariableDocumentation{
 	"up.$pack": {
 		English: "Package configuration and runtime metadata. Fields describe the deployed package, selected target and enabled data areas.",
 		German:  "Paketkonfiguration und Laufzeitmetadaten. Die Felder beschreiben das bereitgestellte Paket, das Zielsystem und die aktivierten Datenbereiche.",

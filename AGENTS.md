@@ -35,6 +35,11 @@ manual. The English 6.16.6 heading and both editions' `RemoveXmlElement`
 signature contain known copy/paste errors; use the German heading and call
 examples to resolve them.
 
+Section 8.9 (printed pages 373-391) is the current system-variable reference.
+It covers package configuration, dialog fields and enumerations, direct and
+dialog-scoped steps, and the runtime environment. Keep its English and German
+descriptions synchronized in `internal/lsp/current_system_variables.go`.
+
 The committed `DataBase` directory is a replaceable, Siemens-supplied catalog
 of NC, drive, and system parameter descriptions. Preserve the ability to
 update it by replacing the directory as-is. `cmc_projekt` is a large ignored
