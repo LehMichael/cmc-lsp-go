@@ -26,6 +26,7 @@ type symbolOccurrence struct {
 	ArgumentCount int
 	Definition    bool
 	Project       string
+	Pattern       identifierPattern
 }
 
 func (server *Lsp) loadProjects(params initializeParams) {
@@ -85,15 +86,26 @@ func occurrences(text, uri, projectPath string) []symbolOccurrence {
 	statements, _ := parser.Parse(tokens, diagnostics)
 	var result []symbolOccurrence
 
-	addIdentifier := func(identifier parser.IdentifierExpression, definition bool, kind int, detail string) {
+	var addIdentifier func(parser.IdentifierExpression, bool, int, string) int
+	addIdentifier = func(identifier parser.IdentifierExpression, definition bool, kind int, detail string) int {
 		name := parser.IdentifierString(identifier)
 		if name == "" {
-			return
+			return -1
 		}
+		index := len(result)
 		result = append(result, symbolOccurrence{
 			Name: name, URI: uri, Range: sourceRangeToLSP(text, identifier.Range),
 			Kind: kind, Detail: detail, Definition: definition, Project: projectPath,
+			Pattern: identifierPatternFromAST(identifier),
 		})
+		for _, segment := range identifier.Segments {
+			for _, part := range segment.Parts {
+				if replacement, ok := part.(parser.ReplacementIdentifier); ok {
+					addIdentifier(parser.IdentifierExpression(replacement), false, 13, "CMC replacement variable")
+				}
+			}
+		}
+		return index
 	}
 
 	var addExpression func(parser.ExpressionKind)
@@ -133,14 +145,13 @@ func occurrences(text, uri, projectPath string) []symbolOccurrence {
 					if statement.Kind == parser.Procedure {
 						callableKind = "proc"
 					}
-					before := len(result)
-					addIdentifier(*statement.Identifier, true, 12, callableDetail(callableKind, statement.ArgCount, statement.ArgumentDescriptions))
-					if len(result) > before {
-						result[len(result)-1].Documentation = callableDocumentation(statement.Description, statement.ArgumentDescriptions)
-						result[len(result)-1].CallableKind = callableKind
-						result[len(result)-1].Description = statement.Description
-						result[len(result)-1].Arguments = append([]string(nil), statement.ArgumentDescriptions...)
-						result[len(result)-1].ArgumentCount = statement.ArgCount
+					index := addIdentifier(*statement.Identifier, true, 12, callableDetail(callableKind, statement.ArgCount, statement.ArgumentDescriptions))
+					if index >= 0 {
+						result[index].Documentation = callableDocumentation(statement.Description, statement.ArgumentDescriptions)
+						result[index].CallableKind = callableKind
+						result[index].Description = statement.Description
+						result[index].Arguments = append([]string(nil), statement.ArgumentDescriptions...)
+						result[index].ArgumentCount = statement.ArgCount
 					}
 				}
 				addStatements(statement.Body)
@@ -334,14 +345,42 @@ func (server *Lsp) handleReferences(message requestMessage) {
 		server.respond(message.ID, []location{}, nil)
 		return
 	}
-	name := symbolAt(text, params.Position)
+	occurrences := server.scopedOccurrences(params.TextDocument.URI)
+	selected := occurrenceAt(occurrences, params.TextDocument.URI, params.Position)
+	fallbackName := symbolAt(text, params.Position)
 	var result []location
-	for _, occurrence := range server.scopedOccurrences(params.TextDocument.URI) {
-		if strings.EqualFold(occurrence.Name, name) {
+	for _, occurrence := range occurrences {
+		matches := false
+		if selected != nil {
+			matches = occurrence.Kind == selected.Kind && identifierPatternsOverlap(selected.Pattern, occurrence.Pattern)
+		} else {
+			matches = strings.EqualFold(occurrence.Name, fallbackName)
+		}
+		if matches {
 			result = append(result, location{URI: occurrence.URI, Range: occurrence.Range})
 		}
 	}
 	server.respond(message.ID, result, nil)
+}
+
+func occurrenceAt(occurrences []symbolOccurrence, uri string, target position) *symbolOccurrence {
+	var selected *symbolOccurrence
+	for _, occurrence := range occurrences {
+		if occurrence.URI != uri || !positionInRange(target, occurrence.Range) {
+			continue
+		}
+		if selected == nil || rangeContains(selected.Range, occurrence.Range) {
+			copy := occurrence
+			selected = &copy
+		}
+	}
+	return selected
+}
+
+func rangeContains(outer, inner lspRange) bool {
+	startsBeforeOrEqual := !positionLess(inner.Start, outer.Start)
+	endsAfterOrEqual := !positionLess(outer.End, inner.End)
+	return startsBeforeOrEqual && endsAfterOrEqual && outer != inner
 }
 
 func (server *Lsp) handleWorkspaceSymbols(message requestMessage) {

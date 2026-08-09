@@ -36,7 +36,7 @@ Configure an LSP client with:
 - File extensions: `.upscr`, `.uplib`, `.tea`
 - Language ID: `cmc`
 
-The server supports full document synchronization, live syntax diagnostics, semantic syntax highlighting, whole-document formatting, document/workspace symbols, completion, hover documentation, definitions, references, signature help, and safe callable rename. It uses UTF-16 positions as required by the default LSP encoding.
+The server supports full document synchronization, live syntax diagnostics, semantic syntax highlighting, whole-document formatting, document/workspace symbols, completion, hover documentation, definitions, dynamic-aware references, signature help, and safe callable rename. It uses UTF-16 positions as required by the default LSP encoding.
 
 ### Zed
 
