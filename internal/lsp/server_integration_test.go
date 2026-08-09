@@ -71,6 +71,9 @@ func TestServerDocumentLifecycleAndFormatting(t *testing.T) {
 	if capabilities["signatureHelpProvider"] == nil {
 		t.Fatalf("signature help capability missing: %#v", capabilities)
 	}
+	if capabilities["documentLinkProvider"] == nil {
+		t.Fatalf("document link capability missing: %#v", capabilities)
+	}
 	if capabilities["renameProvider"] == nil {
 		t.Fatalf("rename capability missing: %#v", capabilities)
 	}

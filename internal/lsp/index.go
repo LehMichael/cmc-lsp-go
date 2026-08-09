@@ -326,6 +326,10 @@ func (server *Lsp) handleDefinition(message requestMessage) {
 		server.respond(message.ID, nil, nil)
 		return
 	}
+	if include := server.includeLocationAt(text, params.TextDocument.URI, params.Position); include != nil {
+		server.respond(message.ID, *include, nil)
+		return
+	}
 	definition := server.definitionAt(params.TextDocument.URI, symbolAt(text, params.Position))
 	if definition == nil {
 		server.respond(message.ID, nil, nil)

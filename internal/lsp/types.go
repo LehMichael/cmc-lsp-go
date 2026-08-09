@@ -283,6 +283,12 @@ type location struct {
 	Range lspRange `json:"range"`
 }
 
+type documentLink struct {
+	Range   lspRange `json:"range"`
+	Target  string   `json:"target"`
+	Tooltip string   `json:"tooltip,omitempty"`
+}
+
 type workspaceSymbolParams struct {
 	Query string `json:"query"`
 }

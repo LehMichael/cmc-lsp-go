@@ -36,7 +36,7 @@ Configure an LSP client with:
 - File extensions: `.upscr`, `.uplib`, `.tea`
 - Language ID: `cmc`
 
-The server supports full document synchronization, live syntax diagnostics, semantic syntax highlighting, whole-document formatting, document/workspace symbols, completion, hover documentation, definitions, dynamic-aware references, signature help, and safe callable rename. It uses UTF-16 positions as required by the default LSP encoding.
+The server supports full document synchronization, live syntax diagnostics, semantic syntax highlighting, whole-document formatting, document/workspace symbols, completion, hover documentation, definitions, clickable and navigable `#include` paths, dynamic-aware references, signature help, and safe callable rename. It uses UTF-16 positions as required by the default LSP encoding.
 
 ### Zed
 
@@ -70,6 +70,25 @@ extension registry, then use the following settings with a local checkout:
 The Tree-sitter layer supplies stable lexical highlighting—including correct
 semicolon comments—while combined semantic tokens refine functions,
 namespaces, parameters, and properties using LSP context.
+
+CMC includes commonly use quoted Windows-style paths, which Zed's native
+`editor::OpenSelectedFilename` action does not resolve. The language server
+exposes them as document links and definitions. To make Vim-mode `gf` use that
+resolver for CMC files, add this entry to `~/.config/zed/keymap.json`:
+
+```json
+[
+  {
+    "context": "Editor && vim_mode == normal && (extension == upscr || extension == uplib || extension == tea)",
+    "bindings": {
+      "g f": "editor::GoToDefinition"
+    }
+  }
+]
+```
+
+Without the override, `gd` still opens an include and the include path is
+clickable.
 
 ### Project and single-file modes
 

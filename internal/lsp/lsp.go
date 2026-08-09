@@ -189,8 +189,11 @@ func (server *Lsp) handleRequest(message requestMessage) {
 				"textDocumentSync":           1,
 				"documentFormattingProvider": true,
 				"documentSymbolProvider":     true,
-				"definitionProvider":         true,
-				"referencesProvider":         true,
+				"documentLinkProvider": map[string]any{
+					"resolveProvider": false,
+				},
+				"definitionProvider": true,
+				"referencesProvider": true,
 				"renameProvider": map[string]any{
 					"prepareProvider": true,
 				},
@@ -220,6 +223,8 @@ func (server *Lsp) handleRequest(message requestMessage) {
 		server.handleFormatting(message)
 	case "textDocument/documentSymbol":
 		server.handleDocumentSymbols(message)
+	case "textDocument/documentLink":
+		server.handleDocumentLinks(message)
 	case "textDocument/completion":
 		server.handleCompletion(message)
 	case "textDocument/hover":
