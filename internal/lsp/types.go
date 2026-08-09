@@ -209,6 +209,7 @@ type initializeParams struct {
 	Capabilities          any     `json:"capabilities,omitempty"`
 	InitializationOptions struct {
 		CMCDatabasePath string `json:"cmcDatabasePath,omitempty"`
+		CMCLibraryPath  string `json:"cmcLibraryPath,omitempty"`
 	} `json:"initializationOptions,omitempty"`
 	WorkspaceFolders []struct {
 		URI  string `json:"uri"`

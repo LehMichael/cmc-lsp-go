@@ -1,7 +1,9 @@
 package lsp
 
 import (
+	"os"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strings"
 	"unicode"
@@ -31,6 +33,7 @@ type symbolOccurrence struct {
 
 func (server *Lsp) loadProjects(params initializeParams) {
 	server.locale = params.Locale
+	server.libraryDirs = cmcLibraryDirectories(params.InitializationOptions.CMCLibraryPath)
 	var roots []string
 	for _, folder := range params.WorkspaceFolders {
 		if path, err := workspace.URIToPath(folder.URI); err == nil {
@@ -251,7 +254,75 @@ func (server *Lsp) scopedOccurrences(uri string) []symbolOccurrence {
 	if err != nil {
 		return nil
 	}
-	return occurrences(text, uri, "")
+	result := occurrences(text, uri, "")
+	path, err := workspace.URIToPath(uri)
+	if err != nil {
+		return result
+	}
+	seen := map[string]struct{}{canonicalPath(path): {}}
+	directories := append([]string{filepath.Dir(path)}, server.libraryDirs...)
+	for _, directory := range directories {
+		entries, err := os.ReadDir(directory)
+		if err != nil {
+			continue
+		}
+		for _, entry := range entries {
+			if entry.IsDir() || !strings.EqualFold(filepath.Ext(entry.Name()), ".uplib") {
+				continue
+			}
+			libraryPath := filepath.Join(directory, entry.Name())
+			key := canonicalPath(libraryPath)
+			if _, ok := seen[key]; ok {
+				continue
+			}
+			seen[key] = struct{}{}
+			libraryText, err := server.overlay.Read(libraryPath)
+			if err != nil {
+				continue
+			}
+			result = append(result, occurrences(libraryText, workspace.PathToURI(libraryPath), "")...)
+		}
+	}
+	return result
+}
+
+func cmcLibraryDirectories(configured string) []string {
+	pathList := configured
+	if pathList == "" {
+		pathList = os.Getenv("UP_LIB_PATH")
+	}
+	var result []string
+	seen := map[string]struct{}{}
+	for _, osPath := range filepath.SplitList(pathList) {
+		parts := []string{osPath}
+		if os.PathListSeparator != ';' {
+			parts = strings.Split(osPath, ";")
+		}
+		for _, part := range parts {
+			part = strings.Trim(strings.TrimSpace(part), `"`)
+			if part == "" {
+				continue
+			}
+			if absolute, err := filepath.Abs(part); err == nil {
+				part = absolute
+			}
+			key := canonicalPath(part)
+			if _, ok := seen[key]; ok {
+				continue
+			}
+			seen[key] = struct{}{}
+			result = append(result, filepath.Clean(part))
+		}
+	}
+	return result
+}
+
+func canonicalPath(path string) string {
+	path = filepath.Clean(path)
+	if runtime.GOOS == "windows" {
+		return strings.ToLower(path)
+	}
+	return path
 }
 
 func (server *Lsp) definitionAt(uri, name string) *symbolOccurrence {

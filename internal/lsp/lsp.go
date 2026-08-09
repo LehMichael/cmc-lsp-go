@@ -33,6 +33,7 @@ type Lsp struct {
 	projects    []*project.Project
 	index       []symbolOccurrence
 	parameters  *database.Catalog
+	libraryDirs []string
 	locale      string
 }
 
@@ -565,10 +566,10 @@ var completionItems = append([]completionItem{
 	{Label: "EndWhile", Kind: 14}, {Label: "true", Kind: 21},
 	{Label: "false", Kind: 21}, {Label: "null", Kind: 21},
 	{Label: "#include", Kind: 14, InsertText: "#include \"\""},
-	}, builtinCompletionItems()...)
+}, builtinCompletionItems()...)
 
 var hoverDocumentation = map[string]string{
-	"if":            "`If condition ... ElsIf condition ... Else ... EndIf` conditionally executes a block.",
-	"while":         "`While condition ... EndWhile` repeats a block while its condition is true.",
-	"include":       "`#include \"path\"` includes an external script at deployment time.",
+	"if":      "`If condition ... ElsIf condition ... Else ... EndIf` conditionally executes a block.",
+	"while":   "`While condition ... EndWhile` repeats a block while its condition is true.",
+	"include": "`#include \"path\"` includes an external script at deployment time.",
 }

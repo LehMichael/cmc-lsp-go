@@ -96,6 +96,8 @@ When the workspace contains a `.upproj` file, the server reads its XML and resol
 
 Files that are not referenced by a `.upproj` remain in single-file mode and do not inherit unrelated project symbols. `.tea` data files and `.upact` action files are parsed and formatted as regular CMC scripts.
 
+In single-file mode, the server discovers `.uplib` libraries beside the active script and in the directories listed by `%UP_LIB_PATH%`, following the CMC Diff search order. Directory entries are processed in filename order and duplicate directories are ignored. To override the inherited environment, pass the platform path list as `cmcLibraryPath` in the LSP `initializationOptions` object.
+
 Hover documentation covers the language-provided functions and procedures from the current and legacy manuals, including XML and PLC ConfigData operations, Siemens standard-library callables, signatures, behavior, and compatibility aliases. German LSP client locales receive German descriptions. Completion recommends the current callable names and omits deprecated aliases.
 
 ### Siemens parameter database
