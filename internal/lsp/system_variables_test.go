@@ -67,7 +67,7 @@ func TestSystemVariableMemberCompletion(t *testing.T) {
 		},
 		{
 			name:       "partial step member",
-			source:     "If Up.$Step[1].Pro",
+			source:     "If (Up.$STEP[1].Pro",
 			locale:     "en-US",
 			wantLabels: []string{"Processing"},
 			wantDetail: "BOOL \u00b7 Read-only \u2014 Runtime feedback indicating whether the step was executed.",
@@ -117,7 +117,7 @@ func TestSystemVariableMemberCompletion(t *testing.T) {
 
 func TestHandleSystemVariableMemberCompletionSuppressesGlobalItems(t *testing.T) {
 	const uri = "file:///tmp/member-completion.upact"
-	const source = "If Up.$Step[1].Pro"
+	const source = "If (Up.$STEP[1].Pro"
 	var output bytes.Buffer
 	server := NewLsp(bytes.NewReader(nil), &output)
 	if err := server.overlay.Open(uri, source, 1); err != nil {
@@ -160,15 +160,25 @@ func TestCanonicalSystemVariableNormalizesIndexes(t *testing.T) {
 }
 
 func TestSystemVariableAt(t *testing.T) {
-	const source = "If Up.$Step[Axis1].Activated == true\n"
-	if got := systemVariableAt(source, position{Line: 0, Character: 20}); got != "Up.$Step[Axis1].Activated" {
-		t.Fatalf("systemVariableAt = %q", got)
+	tests := []struct {
+		source string
+		column int
+		want   string
+	}{
+		{"If Up.$Step[Axis1].Activated == true\n", 20, "Up.$Step[Axis1].Activated"},
+		{"If (Up.$Step[Axis1].Activated)\n", 21, "Up.$Step[Axis1].Activated"},
+		{"If (Up.$Step[$(Up.StepID)].Processing == true)\n", 31, "Up.$Step[$(Up.StepID)].Processing"},
+	}
+	for _, test := range tests {
+		if got := systemVariableAt(test.source, position{Line: 0, Character: test.column}); got != test.want {
+			t.Errorf("systemVariableAt(%q) = %q, want %q", test.source, got, test.want)
+		}
 	}
 }
 
-func TestHandleSystemVariableHover(t *testing.T) {
+func TestHandleSystemVariableHoverInsideParenthesizedIf(t *testing.T) {
 	const uri = "file:///tmp/system-variable.upact"
-	const source = "If Up.$Env.BatchMode == true\n"
+	const source = "If (Up.$Env.BatchMode == true)\n"
 	var output bytes.Buffer
 	server := NewLsp(bytes.NewReader(nil), &output)
 	server.locale = "de-AT"
@@ -177,7 +187,7 @@ func TestHandleSystemVariableHover(t *testing.T) {
 	}
 	params, err := json.Marshal(map[string]any{
 		"textDocument": map[string]any{"uri": uri},
-		"position":     map[string]any{"line": 0, "character": 12},
+		"position":     map[string]any{"line": 0, "character": 13},
 	})
 	if err != nil {
 		t.Fatal(err)

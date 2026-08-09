@@ -94,7 +94,7 @@ func systemVariableAt(text string, target position) string {
 	for end < len(runes) && allowed(runes[end]) {
 		end++
 	}
-	candidate := strings.Trim(string(runes[start:end]), ".")
+	candidate := strings.Trim(systemVariableCandidate(string(runes[start:end])), ".")
 	if !strings.HasPrefix(strings.ToLower(candidate), "up.$") {
 		return ""
 	}
@@ -200,11 +200,32 @@ func systemVariableCompletionPrefixAt(text string, target position) string {
 	for start > 0 && allowed(runes[start-1]) {
 		start--
 	}
-	prefix := string(runes[start:column])
+	prefix := systemVariableCandidate(string(runes[start:column]))
 	if !strings.HasPrefix(strings.ToLower(prefix), "up.$") {
 		return ""
 	}
 	return prefix
+}
+
+func systemVariableCandidate(value string) string {
+	start := strings.Index(strings.ToLower(value), "up.$")
+	if start < 0 {
+		return ""
+	}
+	value = value[start:]
+	parentheses := 0
+	for index, character := range value {
+		switch character {
+		case '(':
+			parentheses++
+		case ')':
+			if parentheses == 0 {
+				return value[:index]
+			}
+			parentheses--
+		}
+	}
+	return value
 }
 
 func systemVariableCompletionParent(key string) string {
