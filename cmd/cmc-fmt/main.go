@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/lehmichael/cmc-lsp-go/internal/document"
 	"github.com/lehmichael/cmc-lsp-go/internal/formatter"
 	"github.com/lehmichael/cmc-lsp-go/internal/textencoding"
 )
@@ -61,7 +62,7 @@ func main() {
 			continue
 		}
 		text, encoding := textencoding.Decode(input)
-		output := formatter.Format(text, options)
+		output := document.Format(path, text, options)
 		if *check {
 			if output != text {
 				fmt.Fprintln(os.Stderr, path)

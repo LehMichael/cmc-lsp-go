@@ -4,8 +4,10 @@ import (
 	"strings"
 	"unicode/utf16"
 
+	"github.com/lehmichael/cmc-lsp-go/internal/document"
 	"github.com/lehmichael/cmc-lsp-go/internal/lexer"
 	"github.com/lehmichael/cmc-lsp-go/internal/source"
+	"github.com/lehmichael/cmc-lsp-go/internal/workspace"
 )
 
 // The order of these entries is part of the wire format: encoded tokens refer
@@ -53,7 +55,8 @@ func (server *Lsp) handleSemanticTokens(message requestMessage) {
 		server.respond(message.ID, nil, &responseError{Code: InvalidParams, Message: err.Error()})
 		return
 	}
-	server.respond(message.ID, semanticTokens{Data: semanticTokensFor(text)}, nil)
+	path, _ := workspace.URIToPath(params.TextDocument.URI)
+	server.respond(message.ID, semanticTokens{Data: semanticTokensFor(document.SemanticText(path, text))}, nil)
 }
 
 func semanticTokensFor(text string) []uint32 {

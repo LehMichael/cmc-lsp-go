@@ -1595,6 +1595,20 @@ func (p *parser) parseIdentifier(section *SectionSwitchKind) IdentifierExpressio
 			parts = append(parts, LiteralIdentifier(token.Lexeme))
 			endToken = token
 			_ = p.advance()
+		case l.SymbolDollar:
+			if p.Pos+1 >= len(p.Tokens) {
+				flush()
+				return IdentifierExpression{Segments: segments, Range: source.MergeRange(startToken.Range, endToken.Range), Section: section}
+			}
+			next := p.Tokens[p.Pos+1]
+			if next.LeadingWhitespace != "" || (next.Kind != l.LiteralIdentifier && next.Kind != l.LiteralNumber) {
+				flush()
+				return IdentifierExpression{Segments: segments, Range: source.MergeRange(startToken.Range, endToken.Range), Section: section}
+			}
+			parts = append(parts, LiteralIdentifier("$"+next.Lexeme))
+			endToken = next
+			_ = p.advance()
+			_ = p.advance()
 		case l.SymbolDollarParen:
 			replacementStart := token
 			_ = p.advance()

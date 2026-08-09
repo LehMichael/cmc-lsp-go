@@ -30,6 +30,7 @@ type symbolOccurrence struct {
 }
 
 func (server *Lsp) loadProjects(params initializeParams) {
+	server.locale = params.Locale
 	var roots []string
 	for _, folder := range params.WorkspaceFolders {
 		if path, err := workspace.URIToPath(folder.URI); err == nil {
@@ -82,7 +83,7 @@ func (server *Lsp) reindex() {
 }
 
 func occurrences(text, uri, projectPath string) []symbolOccurrence {
-	tokens, diagnostics := lexer.Tokenize(text)
+	tokens, diagnostics := lexer.Tokenize(cmcTextForURI(uri, text))
 	statements, _ := parser.Parse(tokens, diagnostics)
 	var result []symbolOccurrence
 

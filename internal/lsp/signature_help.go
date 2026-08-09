@@ -23,7 +23,7 @@ func (server *Lsp) handleSignatureHelp(message requestMessage) {
 		server.respond(message.ID, nil, nil)
 		return
 	}
-	context, ok := callAt(text, params.Position)
+	context, ok := callAt(cmcTextForURI(params.TextDocument.URI, text), params.Position)
 	if !ok {
 		server.respond(message.ID, nil, nil)
 		return

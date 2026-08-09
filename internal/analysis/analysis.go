@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/lehmichael/cmc-lsp-go/internal/diag"
+	"github.com/lehmichael/cmc-lsp-go/internal/document"
 	"github.com/lehmichael/cmc-lsp-go/internal/lexer"
 	"github.com/lehmichael/cmc-lsp-go/internal/parser"
 	"github.com/lehmichael/cmc-lsp-go/internal/workspace"
@@ -160,7 +161,7 @@ func resolve(root string, ws *workspace.Overlay) map[string]Parsed {
 			return false
 		}
 
-		tokens, di := lexer.Tokenize(t)
+		tokens, di := lexer.Tokenize(document.CMCText(u, t))
 		ast, di := parser.Parse(tokens, di)
 
 		basePath := filepath.Dir(u)

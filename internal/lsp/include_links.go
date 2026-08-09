@@ -44,7 +44,7 @@ func (server *Lsp) includeLocationAt(text, uri string, target position) *locatio
 }
 
 func (server *Lsp) includeTargets(text, uri string) []includeTarget {
-	tokens, _ := lexer.Tokenize(text)
+	tokens, _ := lexer.Tokenize(cmcTextForURI(uri, text))
 	expectingPath := false
 	var result []includeTarget
 	for _, token := range tokens {

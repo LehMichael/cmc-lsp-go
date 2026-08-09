@@ -15,6 +15,7 @@ import (
 
 	"github.com/lehmichael/cmc-lsp-go/internal/database"
 	"github.com/lehmichael/cmc-lsp-go/internal/diag"
+	"github.com/lehmichael/cmc-lsp-go/internal/document"
 	"github.com/lehmichael/cmc-lsp-go/internal/formatter"
 	"github.com/lehmichael/cmc-lsp-go/internal/lexer"
 	"github.com/lehmichael/cmc-lsp-go/internal/parser"
@@ -32,6 +33,7 @@ type Lsp struct {
 	projects    []*project.Project
 	index       []symbolOccurrence
 	parameters  *database.Catalog
+	locale      string
 }
 
 type header struct {
@@ -271,7 +273,8 @@ func (server *Lsp) handleFormatting(message requestMessage) {
 	if params.Options.CMCAlignTrailingComments != nil {
 		options.AlignTrailingComments = *params.Options.CMCAlignTrailingComments
 	}
-	formatted := formatter.Format(text, options)
+	path, _ := workspace.URIToPath(params.TextDocument.URI)
+	formatted := document.Format(path, text, options)
 	if formatted == text {
 		server.respond(message.ID, []textEdit{}, nil)
 		return
@@ -292,7 +295,8 @@ func (server *Lsp) handleDocumentSymbols(message requestMessage) {
 		server.respond(message.ID, nil, &responseError{Code: InvalidParams, Message: err.Error()})
 		return
 	}
-	tokens, diagnostics := lexer.Tokenize(text)
+	cmcText := cmcTextForURI(params.TextDocument.URI, text)
+	tokens, diagnostics := lexer.Tokenize(cmcText)
 	ast, _ := parser.Parse(tokens, diagnostics)
 	server.respond(message.ID, symbolsForStatements(text, ast), nil)
 }
@@ -308,8 +312,12 @@ func (server *Lsp) handleHover(message requestMessage) {
 		server.respond(message.ID, nil, nil)
 		return
 	}
+	systemVariable := systemVariableAt(text, params.Position)
+	documentation, ok := systemVariableHover(systemVariable, server.locale)
 	word := wordAt(text, params.Position)
-	documentation, ok := hoverDocumentation[strings.ToLower(word)]
+	if !ok {
+		documentation, ok = hoverDocumentation[strings.ToLower(word)]
+	}
 	if !ok && server.parameters != nil {
 		documentation, ok = server.parameters.Hover(word)
 	}
@@ -345,7 +353,8 @@ func decodeParams(raw json.RawMessage, target any) error {
 }
 
 func (server *Lsp) publishDiagnostics(uri, text string, version int) {
-	tokens, diagnostics := lexer.Tokenize(text)
+	cmcText := cmcTextForURI(uri, text)
+	tokens, diagnostics := lexer.Tokenize(cmcText)
 	ast, diagnostics := parser.Parse(tokens, diagnostics)
 	if path, err := workspace.URIToPath(uri); err == nil {
 		for _, statement := range ast {
@@ -380,6 +389,14 @@ func (server *Lsp) publishDiagnostics(uri, text string, version int) {
 		params["version"] = version
 	}
 	server.notify("textDocument/publishDiagnostics", params)
+}
+
+func cmcTextForURI(uri, text string) string {
+	path, err := workspace.URIToPath(uri)
+	if err != nil {
+		return text
+	}
+	return document.CMCText(path, text)
 }
 
 func (server *Lsp) notify(method string, params any) {

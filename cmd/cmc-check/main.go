@@ -8,6 +8,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/lehmichael/cmc-lsp-go/internal/document"
 	"github.com/lehmichael/cmc-lsp-go/internal/formatter"
 	"github.com/lehmichael/cmc-lsp-go/internal/lexer"
 	"github.com/lehmichael/cmc-lsp-go/internal/parser"
@@ -37,13 +38,13 @@ func main() {
 			continue
 		}
 		text, _ := textencoding.Decode(input)
-		tokens, diagnostics := lexer.Tokenize(text)
+		tokens, diagnostics := lexer.Tokenize(document.CMCText(path, text))
 		_, diagnostics = parser.Parse(tokens, diagnostics)
 		for _, item := range diagnostics {
 			fmt.Printf("%s:%d:%d: %s\n", path, item.Range.Start.Line+1, item.Range.Start.Column+1, item.Kind.String())
 		}
 		failures += len(diagnostics)
-		if *checkFormat && formatter.Format(text, formatter.DefaultOptions()) != text {
+		if *checkFormat && document.Format(path, text, formatter.DefaultOptions()) != text {
 			fmt.Printf("%s: not formatted\n", path)
 			failures++
 		}

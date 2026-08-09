@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"slices"
 	"testing"
 
 	"github.com/lehmichael/cmc-lsp-go/internal/lexer"
@@ -91,6 +92,25 @@ func TestInterpolatedStringLiteral(t *testing.T) {
 	}
 	if value.Replacements[0].Range.Start.Column != 13 || value.Replacements[0].Range.End.Column != 20 {
 		t.Fatalf("replacement range = %#v", value.Replacements[0].Range)
+	}
+}
+
+func TestSystemVariableIdentifier(t *testing.T) {
+	input := "Up.$Pack.NCU = true\nUp.$Step[Axis1].Activated = false\n"
+	tokens, diagnostics := lexer.Tokenize(input)
+	statements, diagnostics := Parse(tokens, diagnostics)
+	if len(diagnostics) != 0 {
+		t.Fatalf("diagnostics = %#v", diagnostics)
+	}
+	want := []string{"Up.$Pack.NCU", "Up.$Step[Axis1].Activated"}
+	var got []string
+	for _, statement := range statements {
+		if assignment, ok := statement.Kind.(Assignment); ok {
+			got = append(got, IdentifierString(assignment.Target))
+		}
+	}
+	if !slices.Equal(got, want) {
+		t.Fatalf("assignments = %#v", got)
 	}
 }
 

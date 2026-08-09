@@ -82,10 +82,10 @@ func Load(path string) (*Project, error) {
 }
 
 // IsSourceExtension reports whether an extension is interpreted as CMC source.
-// .tea files use the same syntax as scripts and are commonly used for data.
+// .tea data files and .upact action files use the same syntax as scripts.
 func IsSourceExtension(extension string) bool {
 	switch strings.ToLower(extension) {
-	case ".upscr", ".uplib", ".tea":
+	case ".upscr", ".uplib", ".tea", ".upact":
 		return true
 	default:
 		return false

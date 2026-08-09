@@ -18,14 +18,18 @@ func TestLoad(t *testing.T) {
 	}
 	library := filepath.Join(libraryDirectory, "common.uplib")
 	script := filepath.Join(projectDirectory, "start.upscr")
+	action := filepath.Join(projectDirectory, "deploy.upact")
 	if err := os.WriteFile(library, []byte("proc Common() {}\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(script, []byte("Common()\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
+	if err := os.WriteFile(action, []byte("Up.done = true\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
 	projectPath := filepath.Join(projectDirectory, "machine.upproj")
-	xml := `<?xml version="1.0"?><pack version="80" appVersion="6.9.0.0"><config><list name="ScriptLibList"><dlink ref="..\Database\Library\common.uplib" /></list></config><event><script ref="start.upscr" /></event></pack>`
+	xml := `<?xml version="1.0"?><pack version="80" appVersion="6.9.0.0"><config><list name="ScriptLibList"><dlink ref="..\Database\Library\common.uplib" /></list></config><event><script ref="start.upscr" /><action ref="deploy.upact" /></event></pack>`
 	if err := os.WriteFile(projectPath, append([]byte{0xEF, 0xBB, 0xBF}, []byte(xml)...), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -40,7 +44,7 @@ func TestLoad(t *testing.T) {
 	if len(loaded.Libraries) != 1 || loaded.Libraries[0] != library {
 		t.Fatalf("libraries = %#v", loaded.Libraries)
 	}
-	if len(loaded.Scripts) != 1 || loaded.Scripts[0] != script {
+	if len(loaded.Scripts) != 2 || loaded.Scripts[0] != script || loaded.Scripts[1] != action {
 		t.Fatalf("scripts = %#v", loaded.Scripts)
 	}
 	if len(loaded.Missing) != 0 || !loaded.Contains(script) {
@@ -49,7 +53,7 @@ func TestLoad(t *testing.T) {
 }
 
 func TestIsSourceExtension(t *testing.T) {
-	for _, extension := range []string{".upscr", ".UPLIB", ".tea", ".TEA"} {
+	for _, extension := range []string{".upscr", ".UPLIB", ".tea", ".TEA", ".upact", ".UPACT"} {
 		if !IsSourceExtension(extension) {
 			t.Errorf("IsSourceExtension(%q) = false", extension)
 		}

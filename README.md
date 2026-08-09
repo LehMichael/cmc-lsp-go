@@ -1,6 +1,6 @@
 # cmc-lsp-go
 
-Language tooling for Siemens Create MyConfig (CMC) scripts (`.upscr`), script libraries (`.uplib`), and data exports (`.tea`). The repository provides:
+Language tooling for Siemens Create MyConfig (CMC) scripts (`.upscr`), script libraries (`.uplib`), action scripts (`.upact`), and data exports (`.tea`). The repository provides:
 
 - `cmc-lsp`: an LSP server over standard input/output
 - `cmc-fmt`: a standalone formatter
@@ -33,7 +33,7 @@ Configure an LSP client with:
 
 - Command: `cmc-lsp`
 - Transport: standard input/output
-- File extensions: `.upscr`, `.uplib`, `.tea`
+- File extensions: `.upscr`, `.uplib`, `.upact`, `.tea`
 - Language ID: `cmc`
 
 The server supports full document synchronization, live syntax diagnostics, semantic syntax highlighting, whole-document formatting, document/workspace symbols, completion, hover documentation, definitions, clickable and navigable `#include` paths, dynamic-aware references, signature help, and safe callable rename. It uses UTF-16 positions as required by the default LSP encoding.
@@ -79,7 +79,7 @@ resolver for CMC files, add this entry to `~/.config/zed/keymap.json`:
 ```json
 [
   {
-    "context": "Editor && vim_mode == normal && (extension == upscr || extension == uplib || extension == tea)",
+    "context": "Editor && vim_mode == normal && (extension == upscr || extension == uplib || extension == upact || extension == tea)",
     "bindings": {
       "g f": "editor::GoToDefinition"
     }
@@ -92,9 +92,9 @@ clickable.
 
 ### Project and single-file modes
 
-When the workspace contains a `.upproj` file, the server reads its XML and resolves the Windows-style paths in `ScriptLibList` and `<script ref="...">` elements. Referenced `.upscr` and `.uplib` files share a project index, so library functions and project variables participate in completion, hover, signature help, go-to-definition, references, rename, and workspace-symbol searches.
+When the workspace contains a `.upproj` file, the server reads its XML and resolves the Windows-style paths in `ScriptLibList` and `<script ref="...">` elements. Referenced `.upscr`, `.uplib`, `.upact`, and `.tea` files share a project index, so library functions and project variables participate in completion, hover, signature help, go-to-definition, references, rename, and workspace-symbol searches.
 
-Files that are not referenced by a `.upproj` remain in single-file mode and do not inherit unrelated project symbols. `.tea` data files are parsed and formatted as regular CMC scripts.
+Files that are not referenced by a `.upproj` remain in single-file mode and do not inherit unrelated project symbols. `.tea` data files and `.upact` action files are parsed and formatted as regular CMC scripts.
 
 ### Siemens parameter database
 
