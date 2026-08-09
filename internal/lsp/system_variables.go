@@ -2,11 +2,13 @@ package lsp
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"unicode"
 )
 
 type systemVariableDocumentation struct {
+	Name    string
 	Type    string
 	Access  string
 	English string
@@ -134,6 +136,116 @@ func patternedSystemVariableDocumentation(key string) (systemVariableDocumentati
 	pattern := "up.$dialog.?.step[?]" + key[step+len(".step[?]"):]
 	documentation, ok := systemVariableDocumentationByName[pattern]
 	return documentation, ok
+}
+
+func systemVariableCompletionItems(text string, target position, locale string) ([]completionItem, bool) {
+	prefix := systemVariableCompletionPrefixAt(text, target)
+	separator := strings.LastIndexByte(prefix, '.')
+	if separator < 0 {
+		return nil, false
+	}
+
+	parent := prefix[:separator]
+	memberPrefix := strings.ToLower(prefix[separator+1:])
+	parentKey := systemVariableCompletionParent(canonicalSystemVariable(parent))
+	parentDocumentation, knownParent := currentSystemVariableDocumentationByName[parentKey]
+	if !knownParent {
+		return nil, false
+	}
+
+	childPrefix := parentKey + "."
+	items := make([]completionItem, 0, 8)
+	for key, documentation := range currentSystemVariableDocumentationByName {
+		if !strings.HasPrefix(key, childPrefix) {
+			continue
+		}
+		remainder := strings.TrimPrefix(key, childPrefix)
+		if remainder == "" || strings.ContainsRune(remainder, '.') || documentation.Name == "" {
+			continue
+		}
+		label := documentation.Name[strings.LastIndexByte(documentation.Name, '.')+1:]
+		if !strings.HasPrefix(strings.ToLower(label), memberPrefix) {
+			continue
+		}
+		identifier := parent + "." + label
+		hover, _ := systemVariableHover(identifier, locale)
+		items = append(items, completionItem{
+			Label:         label,
+			Kind:          systemVariableCompletionKind(parentDocumentation, documentation),
+			Detail:        systemVariableCompletionDetail(documentation, locale),
+			Documentation: &markupContent{Kind: "markdown", Value: hover},
+			InsertText:    label,
+		})
+	}
+	slices.SortFunc(items, func(left, right completionItem) int {
+		return strings.Compare(strings.ToLower(left.Label), strings.ToLower(right.Label))
+	})
+	return items, true
+}
+
+func systemVariableCompletionPrefixAt(text string, target position) string {
+	lines := strings.Split(text, "\n")
+	if target.Line < 0 || target.Line >= len(lines) {
+		return ""
+	}
+	runes := []rune(strings.TrimSuffix(lines[target.Line], "\r"))
+	column := utf16ToRuneColumn(runes, target.Character)
+	if column < 0 || column > len(runes) {
+		return ""
+	}
+	allowed := func(value rune) bool {
+		return unicode.IsLetter(value) || unicode.IsNumber(value) || strings.ContainsRune("_$.[()]?", value)
+	}
+	start := column
+	for start > 0 && allowed(runes[start-1]) {
+		start--
+	}
+	prefix := string(runes[start:column])
+	if !strings.HasPrefix(strings.ToLower(prefix), "up.$") {
+		return ""
+	}
+	return prefix
+}
+
+func systemVariableCompletionParent(key string) string {
+	if !strings.HasPrefix(key, "up.$dialog.") {
+		return key
+	}
+	step := strings.Index(key, ".step[?]")
+	if step < 0 {
+		return key
+	}
+	return "up.$dialog.?.step[?]" + key[step+len(".step[?]"):]
+}
+
+func systemVariableCompletionKind(parent, child systemVariableDocumentation) int {
+	if parent.Type != "" && parent.Type != "OBJECT" && parent.Type == child.Type && parent.Access == "Read-only" {
+		return 20 // EnumMember
+	}
+	return 10 // Property
+}
+
+func systemVariableCompletionDetail(documentation systemVariableDocumentation, locale string) string {
+	parts := make([]string, 0, 2)
+	if documentation.Type != "" {
+		parts = append(parts, documentation.Type)
+	}
+	if documentation.Access != "" {
+		access := documentation.Access
+		if isGermanLocale(locale) && access == "Read-only" {
+			access = "Schreibgesch\u00fctzt"
+		}
+		parts = append(parts, access)
+	}
+	detail := strings.Join(parts, " \u00b7 ")
+	description := documentation.English
+	if isGermanLocale(locale) {
+		description = documentation.German
+	}
+	if detail != "" && description != "" {
+		return detail + " \u2014 " + description
+	}
+	return detail + description
 }
 
 var legacySystemVariableDocumentationByName = map[string]systemVariableDocumentation{

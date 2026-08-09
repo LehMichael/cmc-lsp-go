@@ -359,6 +359,12 @@ func (server *Lsp) handleCompletion(message requestMessage) {
 		server.respond(message.ID, nil, &responseError{Code: InvalidParams, Message: err.Error()})
 		return
 	}
+	if text, err := server.overlay.ReadURI(params.TextDocument.URI); err == nil {
+		if items, contextual := systemVariableCompletionItems(text, params.Position, server.locale); contextual {
+			server.respond(message.ID, items, nil)
+			return
+		}
+	}
 	items := append([]completionItem(nil), completionItems...)
 	seen := map[string]struct{}{}
 	for _, item := range items {

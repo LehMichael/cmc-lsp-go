@@ -106,6 +106,9 @@ values, indexed language-archive entries, `Up.$Step[...]` and dialog-scoped
 steps, `Up.$AccessLevelPWDConfig`, `Up.$BasicSecSettings`, and `Up.$Env`.
 Indexed IDs are matched independently of their concrete value, and German LSP
 client locales receive the corresponding German descriptions.
+Completion after a documented system-variable object is member-aware: it only
+offers valid immediate fields or enumeration values and includes their type,
+access mode, localized description, and manual reference.
 
 ### Siemens parameter database
 

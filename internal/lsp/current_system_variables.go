@@ -21,7 +21,7 @@ func buildCurrentSystemVariableDocumentation() map[string]systemVariableDocument
 	result := map[string]systemVariableDocumentation{}
 	add := func(name, valueType, access, english, german, manual string) {
 		result[strings.ToLower(name)] = systemVariableDocumentation{
-			Type: valueType, Access: access, English: english, German: german, Manual: manual,
+			Name: name, Type: valueType, Access: access, English: english, German: german, Manual: manual,
 		}
 	}
 	readOnly := "Read-only"

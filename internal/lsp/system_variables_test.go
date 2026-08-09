@@ -45,9 +45,104 @@ func TestCurrentSystemVariableDocumentationIsComplete(t *testing.T) {
 		if name != strings.ToLower(name) {
 			t.Errorf("system variable key %q is not canonical", name)
 		}
-		if documentation.Type == "" || documentation.English == "" || documentation.German == "" || documentation.Manual == "" {
+		if documentation.Name == "" || documentation.Type == "" || documentation.English == "" || documentation.German == "" || documentation.Manual == "" {
 			t.Errorf("documentation for %q is incomplete: %#v", name, documentation)
 		}
+	}
+}
+
+func TestSystemVariableMemberCompletion(t *testing.T) {
+	tests := []struct {
+		name       string
+		source     string
+		locale     string
+		wantLabels []string
+		wantDetail string
+	}{
+		{
+			name:       "all step members",
+			source:     "If Up.$Step[1].",
+			locale:     "en-US",
+			wantLabels: []string{"Activated", "Collapsed", "Locked", "Processing"},
+		},
+		{
+			name:       "partial step member",
+			source:     "If Up.$Step[1].Pro",
+			locale:     "en-US",
+			wantLabels: []string{"Processing"},
+			wantDetail: "BOOL \u00b7 Read-only \u2014 Runtime feedback indicating whether the step was executed.",
+		},
+		{
+			name:       "dialog step",
+			source:     "Up.$Dialog.PackageConfig.Step[IPC].L",
+			locale:     "en-US",
+			wantLabels: []string{"Locked"},
+		},
+		{
+			name:       "indexed archive entry",
+			source:     "Up.$Dialog.ArcFileInstall.Entry[German].I",
+			locale:     "en-US",
+			wantLabels: []string{"Install"},
+		},
+		{
+			name:       "localized enum member",
+			source:     "Up.$Dialog.NcuSetup.Modes.S",
+			locale:     "de-AT",
+			wantLabels: []string{"SOFTWAREONLY"},
+			wantDetail: "Mode \u00b7 Schreibgesch\u00fctzt \u2014 Nur Zusatzsoftware installieren.",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			items, contextual := systemVariableCompletionItems(test.source, documentEnd(test.source), test.locale)
+			if !contextual {
+				t.Fatal("completion was not recognized as a system-variable member context")
+			}
+			labels := make([]string, len(items))
+			for index, item := range items {
+				labels[index] = item.Label
+				if item.Documentation == nil || !strings.Contains(item.Documentation.Value, "Siemens Create MyConfig manual") {
+					t.Errorf("completion %q has no manual documentation: %#v", item.Label, item.Documentation)
+				}
+			}
+			if strings.Join(labels, ",") != strings.Join(test.wantLabels, ",") {
+				t.Fatalf("labels = %q, want %q", labels, test.wantLabels)
+			}
+			if test.wantDetail != "" && items[0].Detail != test.wantDetail {
+				t.Errorf("detail = %q, want %q", items[0].Detail, test.wantDetail)
+			}
+		})
+	}
+}
+
+func TestHandleSystemVariableMemberCompletionSuppressesGlobalItems(t *testing.T) {
+	const uri = "file:///tmp/member-completion.upact"
+	const source = "If Up.$Step[1].Pro"
+	var output bytes.Buffer
+	server := NewLsp(bytes.NewReader(nil), &output)
+	if err := server.overlay.Open(uri, source, 1); err != nil {
+		t.Fatal(err)
+	}
+	params, err := json.Marshal(map[string]any{
+		"textDocument": map[string]any{"uri": uri},
+		"position":     documentEnd(source),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	server.handleCompletion(requestMessage{ID: intMessageID(1), Method: "textDocument/completion", Params: params})
+	payload, err := readFrame(bufio.NewReader(&output))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var response struct {
+		Result []completionItem `json:"result"`
+	}
+	if err := json.Unmarshal(payload, &response); err != nil {
+		t.Fatal(err)
+	}
+	if len(response.Result) != 1 || response.Result[0].Label != "Processing" {
+		t.Fatalf("completion = %#v", response.Result)
 	}
 }
 
