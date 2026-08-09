@@ -71,6 +71,29 @@ proc MyProcedure() {
 	}
 }
 
+func TestInterpolatedStringLiteral(t *testing.T) {
+	input := `Up.Path = "$(Up.Root)/$(Up.Name).tea"` + "\n"
+	tokens, diagnostics := lexer.Tokenize(input)
+	statements, diagnostics := Parse(tokens, diagnostics)
+	if len(diagnostics) != 0 {
+		t.Fatalf("diagnostics = %#v", diagnostics)
+	}
+	assignment, ok := statements[0].Kind.(Assignment)
+	if !ok {
+		t.Fatalf("statement = %#v", statements[0].Kind)
+	}
+	value, ok := assignment.Value.Kind.(InterpolatedStringLiteral)
+	if !ok || value.Value != `"$(Up.Root)/$(Up.Name).tea"` || len(value.Replacements) != 2 {
+		t.Fatalf("value = %#v", assignment.Value.Kind)
+	}
+	if IdentifierString(value.Replacements[0]) != "Up.Root" || IdentifierString(value.Replacements[1]) != "Up.Name" {
+		t.Fatalf("replacements = %#v", value.Replacements)
+	}
+	if value.Replacements[0].Range.Start.Column != 13 || value.Replacements[0].Range.End.Column != 20 {
+		t.Fatalf("replacement range = %#v", value.Replacements[0].Range)
+	}
+}
+
 func TestFunctionDocumentation(t *testing.T) {
 	input := `;Description: Example of a function definition
 ;Arg1:<string>

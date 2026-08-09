@@ -282,6 +282,13 @@ type StringLiteral string
 
 func (StringLiteral) isExpressionKind() {}
 
+type InterpolatedStringLiteral struct {
+	Value        string
+	Replacements []IdentifierExpression
+}
+
+func (InterpolatedStringLiteral) isExpressionKind() {}
+
 // RawLiteral is the uninterpreted right-hand side of the := operator.
 type RawLiteral string
 

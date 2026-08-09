@@ -1164,7 +1164,7 @@ func (p *parser) parseExpression(minPrec uint8) Expression {
 		}
 	case l.LiteralString:
 		_ = p.advance()
-		expression.Kind = StringLiteral(token.Lexeme)
+		expression.Kind = parseStringLiteral(token)
 		expression.Range = token.Range
 	case l.LiteralNumber:
 		expression = p.parseNumberLiteral()
@@ -1266,6 +1266,23 @@ func (p *parser) parseExpression(minPrec uint8) Expression {
 	}
 
 	return expression
+}
+
+func parseStringLiteral(token l.Token) ExpressionKind {
+	replacements := l.StringReplacements(token)
+	if len(replacements) == 0 {
+		return StringLiteral(token.Lexeme)
+	}
+	result := InterpolatedStringLiteral{Value: token.Lexeme}
+	for _, replacement := range replacements {
+		nested := parser{Tokens: replacement.Tokens}
+		expression := nested.parseExpression(0)
+		identifier, ok := expression.Kind.(IdentifierExpression)
+		if ok && nested.currentToken().Kind == l.EOF {
+			result.Replacements = append(result.Replacements, identifier)
+		}
+	}
+	return result
 }
 
 func getPrecedence(op BinaryOperator) uint8 {

@@ -57,6 +57,22 @@ func TestSemanticTokensTreatLeadingNNumberAsAnnotation(t *testing.T) {
 	}
 }
 
+func TestSemanticTokensHighlightReplacementsInsideStrings(t *testing.T) {
+	decoded := decodeSemanticTokens(semanticTokensFor("Up.text = \"x$(Up.path)y\"\n"))
+	want := []decodedSemanticToken{
+		{0, 0, 2, "namespace", 0},
+		{0, 3, 4, "property", 0},
+		{0, 8, 1, "operator", 0},
+		{0, 10, 2, "string", 0},
+		{0, 14, 2, "namespace", 0},
+		{0, 17, 4, "property", 0},
+		{0, 22, 2, "string", 0},
+	}
+	if !slices.Equal(decoded, want) {
+		t.Fatalf("semantic tokens\nwant: %#v\n got: %#v", want, decoded)
+	}
+}
+
 type decodedSemanticToken struct {
 	line, start, length int
 	tokenType           string

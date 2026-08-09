@@ -149,7 +149,8 @@ cmc-check -format path/to/project
 - Optional leading `N<number>` machine-data annotations, treated as non-semantic comments
 - Qualified `NC[...]`, `PS[...]`, and `BD[...]` data access
 - Indexed identifiers and nested `$(Up.variable)` replacements
-- Strings, booleans, null, decimal, version, BICO, binary, and hexadecimal literals
+- Strings with embedded `$(...)` replacements, plus booleans, null, decimal,
+  version, BICO, binary, and hexadecimal literals
 - Procedure/function calls and `.uplib` `proc`/`func` definitions
 - Adjacent `;Description:` and `;Arg1:` through `;Arg9:` library documentation comments, surfaced in completion and hover
 - `#include` directives and semicolon comments

@@ -5,6 +5,7 @@ import (
 	"unicode/utf16"
 
 	"github.com/lehmichael/cmc-lsp-go/internal/lexer"
+	"github.com/lehmichael/cmc-lsp-go/internal/source"
 )
 
 // The order of these entries is part of the wire format: encoded tokens refer
@@ -57,6 +58,7 @@ func (server *Lsp) handleSemanticTokens(message requestMessage) {
 
 func semanticTokensFor(text string) []uint32 {
 	tokens, _ := lexer.Tokenize(text)
+	tokens = expandInterpolatedStrings(tokens)
 	var result []uint32
 	previousLine := 0
 	previousStart := 0
@@ -86,6 +88,48 @@ func semanticTokensFor(text string) []uint32 {
 		havePrevious = true
 	}
 	return result
+}
+
+func expandInterpolatedStrings(tokens []lexer.Token) []lexer.Token {
+	var result []lexer.Token
+	for _, token := range tokens {
+		replacements := lexer.StringReplacements(token)
+		if len(replacements) == 0 {
+			result = append(result, token)
+			continue
+		}
+		runes := []rune(token.Lexeme)
+		cursor := 0
+		for _, replacement := range replacements {
+			start := replacement.Range.Start.Column - token.Range.Start.Column
+			end := replacement.Range.End.Column - token.Range.Start.Column
+			if cursor < start {
+				result = append(result, stringChunkToken(token, runes, cursor, start))
+			}
+			for _, nested := range replacement.Tokens {
+				if nested.Kind != lexer.EOF {
+					result = append(result, nested)
+				}
+			}
+			cursor = end
+		}
+		if cursor < len(runes) {
+			result = append(result, stringChunkToken(token, runes, cursor, len(runes)))
+		}
+	}
+	return result
+}
+
+func stringChunkToken(parent lexer.Token, runes []rune, start, end int) lexer.Token {
+	return lexer.Token{
+		Kind:   lexer.LiteralString,
+		Lexeme: string(runes[start:end]),
+		Range: source.NewRange(
+			parent.Range.Start.Line,
+			parent.Range.Start.Column+start,
+			end-start,
+		),
+	}
 }
 
 func classifySemanticToken(tokens []lexer.Token, index int) (uint32, uint32, bool) {

@@ -118,6 +118,10 @@ func occurrences(text, uri, projectPath string) []symbolOccurrence {
 			for _, parameter := range expression.Parameters {
 				addExpression(parameter.Kind)
 			}
+		case parser.InterpolatedStringLiteral:
+			for _, replacement := range expression.Replacements {
+				addIdentifier(replacement, false, 13, "CMC string replacement variable")
+			}
 		case parser.GroupedExpression:
 			addExpression(expression.Expression.Kind)
 		case parser.PrefixedExpression:
