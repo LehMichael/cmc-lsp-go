@@ -96,6 +96,8 @@ When the workspace contains a `.upproj` file, the server reads its XML and resol
 
 Files that are not referenced by a `.upproj` remain in single-file mode and do not inherit unrelated project symbols. `.tea` data files and `.upact` action files are parsed and formatted as regular CMC scripts.
 
+Hover documentation covers the language-provided functions and procedures from manual section 7.8, including signatures, behavior, and compatibility aliases. German LSP client locales receive German descriptions. Completion recommends the current callable names and omits deprecated aliases.
+
 ### Siemens parameter database
 
 If a Siemens `DataBase` directory is present in the workspace or one of its parent directories, the server loads its `.mdat`, `.svar`, and `.para` XML files at startup. Hover then shows the supplied descriptions for NC machine/setting data, system variables, and SINAMICS `p`/`r` parameters. The files are parsed directly, so the database can be updated by replacing the directory.

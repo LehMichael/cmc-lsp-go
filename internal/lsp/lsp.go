@@ -316,6 +316,9 @@ func (server *Lsp) handleHover(message requestMessage) {
 	documentation, ok := systemVariableHover(systemVariable, server.locale)
 	word := wordAt(text, params.Position)
 	if !ok {
+		documentation, ok = builtinCallableHover(word, server.locale)
+	}
+	if !ok {
 		documentation, ok = hoverDocumentation[strings.ToLower(word)]
 	}
 	if !ok && server.parameters != nil {
@@ -554,42 +557,18 @@ func completions() []completionItem {
 	return completionItems
 }
 
-var completionItems = []completionItem{
+var completionItems = append([]completionItem{
 	{Label: "If", Kind: 14, Detail: "If ... EndIf", InsertText: "If "},
 	{Label: "ElsIf", Kind: 14, Detail: "Alternative condition", InsertText: "ElsIf "},
 	{Label: "Else", Kind: 14}, {Label: "EndIf", Kind: 14},
 	{Label: "While", Kind: 14, Detail: "While ... EndWhile", InsertText: "While "},
 	{Label: "EndWhile", Kind: 14}, {Label: "true", Kind: 21},
 	{Label: "false", Kind: 21}, {Label: "null", Kind: 21},
-	{Label: "CHANDATA", Kind: 3, InsertText: "CHANDATA()"},
 	{Label: "#include", Kind: 14, InsertText: "#include \"\""},
-	{Label: "StringLen", Kind: 3, InsertText: "StringLen()"},
-	{Label: "StringMatch", Kind: 3, InsertText: "StringMatch()"},
-	{Label: "StringPos", Kind: 3, InsertText: "StringPos()"},
-	{Label: "StringReplace", Kind: 3, InsertText: "StringReplace()"},
-	{Label: "StringSubStr", Kind: 3, InsertText: "StringSubStr()"},
-	{Label: "FileCopy", Kind: 3, InsertText: "FileCopy()"},
-	{Label: "FileDelete", Kind: 3, InsertText: "FileDelete()"},
-	{Label: "FileExist", Kind: 3, InsertText: "FileExist()"},
-	{Label: "FileRead", Kind: 3, InsertText: "FileRead()"},
-	{Label: "FileWrite", Kind: 3, InsertText: "FileWrite()"},
-	{Label: "Log", Kind: 3, InsertText: "Log()"}, {Label: "Msg", Kind: 3, InsertText: "Msg()"},
-	{Label: "Warning", Kind: 3, InsertText: "Warning()"}, {Label: "Error", Kind: 3, InsertText: "Error()"},
-	{Label: "Version", Kind: 3, InsertText: "Version()"}, {Label: "DOVar", Kind: 3, InsertText: "DOVar()"},
-	{Label: "Return", Kind: 3, InsertText: "Return()"},
-}
+	}, builtinCompletionItems()...)
 
 var hoverDocumentation = map[string]string{
 	"if":            "`If condition ... ElsIf condition ... Else ... EndIf` conditionally executes a block.",
 	"while":         "`While condition ... EndWhile` repeats a block while its condition is true.",
-	"chandata":      "`CHANDATA(n)` selects NC channel `n` for subsequent unqualified data access.",
 	"include":       "`#include \"path\"` includes an external script at deployment time.",
-	"stringlen":     "`StringLen(string)` returns the number of printable and non-printable characters.",
-	"stringmatch":   "`StringMatch(string, search)` returns the part matched by a regular expression.",
-	"stringpos":     "`StringPos(string, search, position)` returns the first match position, or `-1`.",
-	"stringreplace": "`StringReplace(string, search, replacement)` replaces all regular-expression matches.",
-	"stringsubstr":  "`StringSubStr(string, position, length)` returns a substring.",
-	"fileexist":     "`FileExist(area, path)` tests whether a file exists. Common areas are `RTS`, `ARC`, `NCU`, and `PCU`.",
-	"version":       "`Version(area, product)` returns a product version or `null`.",
-	"return":        "`Return(value)` supplies the return value of a function defined in a `.uplib` library.",
 }
