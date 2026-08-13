@@ -11,7 +11,9 @@ The language implementation is based on the examples and reference in the [SINUM
 
 ## Install
 
-Go 1.26 or newer is required.
+Download a Windows x64 or macOS Apple Silicon archive from the repository's
+[Releases](https://github.com/LehMichael/cmc-lsp-go/releases) page, or install
+the commands with Go 1.26 or newer:
 
 ```sh
 go install github.com/lehmichael/cmc-lsp-go/cmd/cmc-lsp@latest
@@ -44,7 +46,8 @@ The [`zed-cmc`](https://github.com/LehMichael/zed-cmc) extension provides a
 native CMC file type and uses
 [`tree-sitter-cmc`](https://github.com/LehMichael/tree-sitter-cmc) for syntax
 highlighting. Install it as a dev extension while it is not yet in Zed's
-extension registry, then use the following settings with a local checkout:
+extension registry. It downloads the matching `cmc-lsp` release automatically;
+a local binary can still be selected explicitly:
 
 ```json
 {

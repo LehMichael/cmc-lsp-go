@@ -1,0 +1,118 @@
+name: Release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Test and vet
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Test
+        run: go test ./...
+
+      - name: Vet
+        run: go vet ./...
+
+  build:
+    name: ${{ matrix.name }}
+    needs: validate
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Windows x64
+            runner: windows-latest
+            archive: cmc-lsp-windows-x64
+            executable_suffix: .exe
+          - name: macOS Apple Silicon
+            runner: macos-14
+            archive: cmc-lsp-macos-arm64
+            executable_suffix: ""
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Build binaries
+        shell: pwsh
+        run: |
+          $archive = "${{ matrix.archive }}"
+          $suffix = "${{ matrix.executable_suffix }}"
+          New-Item -ItemType Directory -Force "$archive/bin" | Out-Null
+          go build -trimpath -ldflags "-s -w" -o "$archive/bin/cmc-lsp$suffix" ./cmd/cmc-lsp
+          go build -trimpath -ldflags "-s -w" -o "$archive/bin/cmc-fmt$suffix" ./cmd/cmc-fmt
+          go build -trimpath -ldflags "-s -w" -o "$archive/bin/cmc-check$suffix" ./cmd/cmc-check
+          Copy-Item README.md "$archive/"
+
+      - name: Archive Windows binaries
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $archive = "${{ matrix.archive }}"
+          Compress-Archive -Path "$archive/*" -DestinationPath "$archive.zip"
+          $hash = (Get-FileHash "$archive.zip" -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  $archive.zip" | Set-Content "$archive.zip.sha256" -NoNewline
+
+      - name: Archive macOS binaries
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          chmod +x "${{ matrix.archive }}"/bin/*
+          (cd "${{ matrix.archive }}" && zip -r "../${{ matrix.archive }}.zip" .)
+          shasum -a 256 "${{ matrix.archive }}.zip" > "${{ matrix.archive }}.zip.sha256"
+
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.archive }}
+          path: |
+            ${{ matrix.archive }}.zip
+            ${{ matrix.archive }}.zip.sha256
+          if-no-files-found: error
+
+  release:
+    name: Publish GitHub Release
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download release artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: cmc-lsp-*
+          path: release-assets
+          merge-multiple: true
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: release-assets/*
+          fail_on_unmatched_files: true
