@@ -40,10 +40,58 @@ It covers package configuration, dialog fields and enumerations, direct and
 dialog-scoped steps, and the runtime environment. Keep its English and German
 descriptions synchronized in `internal/lsp/current_system_variables.go`.
 
-The committed `DataBase` directory is a replaceable, Siemens-supplied catalog
-of NC, drive, and system parameter descriptions. Preserve the ability to
-update it by replacing the directory as-is. `cmc_projekt` is a large ignored
-reference project used for corpus testing and must not be committed.
+`DataBase` is an ignored, locally supplied Siemens catalog of NC, drive, and
+system parameter descriptions. It must not be committed or distributed in
+release artifacts. Preserve the ability to update it by replacing the local
+directory as-is. `cmc_projekt` is a large ignored reference project used for
+corpus testing and must not be committed.
+
+## Completion behavior
+
+Completion is context-sensitive; do not solve member completion by returning
+or merely reordering the global keyword and symbol list.
+
+- `internal/lsp/index.go` owns completion dispatch and project-defined symbol
+  completion. Contextual completion must run before the global fallback.
+- `internal/lsp/system_variables.go` handles documented members below known
+  system-variable parents such as `Up.$Step[...].` and suppresses unrelated
+  global items in those contexts.
+- `Up.` and nested package-variable paths must offer only direct `Up` children.
+  Root completion combines documented roots such as `$Pack`, `$Dialog`,
+  `$Step`, and `$Env` with project-defined package variables. Nested paths must
+  collapse deeper definitions to their next segment (for example,
+  `Up.Group.Child.Value` contributes `Child` at `Up.Group.`).
+- `$...`, `P...`, and `R...` completion comes from the loaded `database.Catalog`,
+  not from identifiers encountered in source files. Keep the result bounded:
+  Siemens catalogs can contain thousands of machine-data entries and tens of
+  thousands of drive-parameter records. Return an LSP `CompletionList` with
+  `isIncomplete: true` when a prefix has more matches than the limit so the
+  client can request a narrower prefix.
+- Catalog completion labels use `database.Parameter.Identifier`; lookup remains
+  case-insensitive and normalizes numeric `P`/`R` identifiers. Completion
+  details and markdown documentation should use the catalog's type, brief, and
+  full hover text. Distinguish machine data, setting data, option data,
+  SINAMICS write parameters (`p`), SINAMICS read parameters (`r`), and other
+  system variables.
+- The description `CMC data or package variable` applies only to identifiers
+  beginning with `Up.`. Do not apply it to machine data, drive parameters,
+  callables, or generic identifiers.
+
+Regression coverage for these rules belongs in
+`internal/lsp/completion_test.go`; catalog prefix matching is covered in
+`internal/database/catalog_test.go`.
+
+## Validation in sandboxed agent sessions
+
+Run `go test ./...`, `go vet ./...`, and `make build` as usual. On macOS, a
+sandboxed command may be unable to write the default Go cache under
+`~/Library/Caches`, the module cache under `~/go/pkg/mod`, or temporary Xcode
+cache files under `/var/folders`. Treat cache-location warnings separately from
+compiler/test failures and verify command exit status and produced binaries.
+If an alternate `GOCACHE` is necessary, choose one stable location for the
+whole session (or request the required permission) and reuse it. Do not create
+and delete a project-local cache around each command; caches are meant to
+persist, and an untracked cache directory pollutes worktree status.
 
 ## Related repositories
 

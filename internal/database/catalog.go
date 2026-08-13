@@ -143,6 +143,31 @@ func (catalog *Catalog) Lookup(identifier string) []Parameter {
 	return matches
 }
 
+// Complete returns unique catalog entries whose identifiers begin with prefix.
+// The boolean result reports whether additional matches were omitted by limit.
+func (catalog *Catalog) Complete(prefix string, limit int) ([]Parameter, bool) {
+	if catalog == nil || limit <= 0 {
+		return nil, false
+	}
+	prefix = strings.ToLower(strings.TrimSpace(prefix))
+	identifiers := make([]string, 0, min(limit, len(catalog.parameters)))
+	for identifier, parameters := range catalog.parameters {
+		if strings.HasPrefix(identifier, prefix) && len(parameters) > 0 {
+			identifiers = append(identifiers, identifier)
+		}
+	}
+	slices.Sort(identifiers)
+	incomplete := len(identifiers) > limit
+	if incomplete {
+		identifiers = identifiers[:limit]
+	}
+	matches := make([]Parameter, 0, len(identifiers))
+	for _, identifier := range identifiers {
+		matches = append(matches, catalog.parameters[identifier][0])
+	}
+	return matches, incomplete
+}
+
 func (catalog *Catalog) Hover(identifier string) (string, bool) {
 	parameters := catalog.Lookup(identifier)
 	if len(parameters) == 0 {

@@ -45,6 +45,12 @@ func TestLoadLookupAndLocale(t *testing.T) {
 	if hover, ok := englishCatalog.Hover("$TC_TEST"); !ok || !strings.Contains(hover, "System value") {
 		t.Fatalf("system-variable hover = %q, %v", hover, ok)
 	}
+	if got, incomplete := englishCatalog.Complete("$mc_trafo_type_", 10); incomplete || len(got) != 2 || got[0].Identifier != "$MC_TRAFO_TYPE_1" || got[1].Identifier != "$MC_TRAFO_TYPE_2" {
+		t.Fatalf("machine-data completion = %#v, incomplete %v", got, incomplete)
+	}
+	if got, incomplete := englishCatalog.Complete("", 2); !incomplete || len(got) != 2 || strings.ToLower(got[0].Identifier) > strings.ToLower(got[1].Identifier) {
+		t.Fatalf("limited completion = %#v, incomplete %v", got, incomplete)
+	}
 
 	germanCatalog, err := Load(root, "de-AT")
 	if err != nil {

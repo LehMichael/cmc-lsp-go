@@ -318,6 +318,11 @@ type completionItem struct {
 	InsertText    string         `json:"insertText,omitempty"`
 }
 
+type completionList struct {
+	IsIncomplete bool             `json:"isIncomplete"`
+	Items        []completionItem `json:"items"`
+}
+
 type markupContent struct {
 	Kind  string `json:"kind"`
 	Value string `json:"value"`

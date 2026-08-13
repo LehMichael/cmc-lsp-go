@@ -64,13 +64,19 @@ func TestParameterDatabaseHover(t *testing.T) {
 	}
 }
 
-func TestBundledParameterDatabaseHover(t *testing.T) {
-	catalog, err := database.Load(filepath.Join("..", "..", "DataBase"), "de-DE")
+func TestLocalParameterDatabaseHover(t *testing.T) {
+	directory := filepath.Join("..", "..", "DataBase")
+	if _, err := os.Stat(directory); os.IsNotExist(err) {
+		t.Skip("local Siemens DataBase directory is not available")
+	} else if err != nil {
+		t.Fatal(err)
+	}
+	catalog, err := database.Load(directory, "de-DE")
 	if err != nil {
 		t.Fatal(err)
 	}
 	hover, ok := catalog.Hover("$MA_NUM_ENCS")
 	if !ok || hover == "" {
-		t.Fatalf("bundled machine-data hover = %q, %v", hover, ok)
+		t.Fatalf("local machine-data hover = %q, %v", hover, ok)
 	}
 }

@@ -116,7 +116,7 @@ func occurrences(text, uri, projectPath string) []symbolOccurrence {
 	addExpression = func(expression parser.ExpressionKind) {
 		switch expression := expression.(type) {
 		case parser.IdentifierExpression:
-			addIdentifier(expression, false, 13, "CMC data or package variable")
+			addIdentifier(expression, false, 13, identifierDetail(parser.IdentifierString(expression)))
 		case parser.CallExpression:
 			addIdentifier(expression.Identifier, false, 12, "Function or procedure call")
 			for _, parameter := range expression.Parameters {
@@ -141,10 +141,10 @@ func occurrences(text, uri, projectPath string) []symbolOccurrence {
 		for _, statement := range statements {
 			switch statement := statement.Kind.(type) {
 			case parser.Assignment:
-				addIdentifier(statement.Target, true, 13, "CMC data or package variable")
+				addIdentifier(statement.Target, true, 13, identifierDetail(parser.IdentifierString(statement.Target)))
 				addExpression(statement.Value.Kind)
 			case parser.DeleteStatement:
-				addIdentifier(statement.Identifier, false, 13, "CMC data or package variable")
+				addIdentifier(statement.Identifier, false, 13, identifierDetail(parser.IdentifierString(statement.Identifier)))
 			case parser.CallStatement:
 				addExpression(parser.CallExpression(statement))
 			case parser.FunctionStatement:
@@ -187,6 +187,32 @@ func occurrences(text, uri, projectPath string) []symbolOccurrence {
 	}
 	addStatements(statements)
 	return result
+}
+
+func identifierDetail(name string) string {
+	lower := strings.ToLower(name)
+	switch {
+	case strings.HasPrefix(lower, "up."):
+		return "CMC data or package variable"
+	case strings.HasPrefix(lower, "$"):
+		return "CMC parameter"
+	case len(lower) > 1 && (lower[0] == 'p' || lower[0] == 'r') && allDecimalDigits(lower[1:]):
+		return "SINAMICS parameter"
+	default:
+		return "Variable"
+	}
+}
+
+func allDecimalDigits(value string) bool {
+	if value == "" {
+		return false
+	}
+	for _, character := range value {
+		if character < '0' || character > '9' {
+			return false
+		}
+	}
+	return true
 }
 
 func callableDetail(kind string, argCount int, arguments []string) string {
@@ -364,6 +390,14 @@ func (server *Lsp) handleCompletion(message requestMessage) {
 			server.respond(message.ID, items, nil)
 			return
 		}
+		if items, contextual := server.upVariableCompletionItems(text, params.TextDocument.URI, params.Position); contextual {
+			server.respond(message.ID, items, nil)
+			return
+		}
+		if list, contextual := server.parameterCompletionItems(text, params.Position); contextual {
+			server.respond(message.ID, list, nil)
+			return
+		}
 	}
 	items := append([]completionItem(nil), completionItems...)
 	seen := map[string]struct{}{}
@@ -395,6 +429,132 @@ func (server *Lsp) handleCompletion(message requestMessage) {
 		return strings.Compare(strings.ToLower(left.Label), strings.ToLower(right.Label))
 	})
 	server.respond(message.ID, items, nil)
+}
+
+func (server *Lsp) upVariableCompletionItems(text, uri string, target position) ([]completionItem, bool) {
+	prefix := identifierCompletionPrefixAt(text, target)
+	lowerPrefix := strings.ToLower(prefix)
+	if !strings.HasPrefix(lowerPrefix, "up.") {
+		return nil, false
+	}
+	separator := strings.LastIndexByte(prefix, '.')
+	parent := prefix[:separator+1]
+	parentKey := lowerPrefix[:separator+1]
+	memberPrefix := lowerPrefix[separator+1:]
+
+	items := make([]completionItem, 0, 16)
+	seen := map[string]struct{}{}
+	if parentKey == "up." {
+		for key, documentation := range currentSystemVariableDocumentationByName {
+			root := strings.TrimPrefix(key, "up.")
+			if !strings.HasPrefix(key, "up.$") || strings.ContainsAny(root, ".[?") {
+				continue
+			}
+			label := documentation.Name[len("Up."):]
+			if !strings.HasPrefix(strings.ToLower(label), memberPrefix) {
+				continue
+			}
+			hover, _ := systemVariableHover(documentation.Name, server.locale)
+			items = append(items, completionItem{
+				Label: label, Kind: 10, Detail: systemVariableCompletionDetail(documentation, server.locale),
+				Documentation: &markupContent{Kind: "markdown", Value: hover}, InsertText: label,
+			})
+			seen[strings.ToLower(label)] = struct{}{}
+		}
+	}
+	for _, occurrence := range server.scopedOccurrences(uri) {
+		if !occurrence.Definition || !strings.HasPrefix(strings.ToLower(occurrence.Name), parentKey) {
+			continue
+		}
+		label := occurrence.Name[len(parent):]
+		if separator := strings.IndexByte(label, '.'); separator >= 0 {
+			label = label[:separator]
+		}
+		key := strings.ToLower(label)
+		if !strings.HasPrefix(key, memberPrefix) {
+			continue
+		}
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		items = append(items, completionItem{Label: label, Kind: 6, Detail: "CMC data or package variable", InsertText: label})
+	}
+	slices.SortFunc(items, func(left, right completionItem) int {
+		return strings.Compare(strings.ToLower(left.Label), strings.ToLower(right.Label))
+	})
+	return items, true
+}
+
+func (server *Lsp) parameterCompletionItems(text string, target position) (completionList, bool) {
+	if server.parameters == nil {
+		return completionList{}, false
+	}
+	prefix := identifierCompletionPrefixAt(text, target)
+	lower := strings.ToLower(prefix)
+	parameterContext := strings.HasPrefix(lower, "$") ||
+		((strings.HasPrefix(lower, "p") || strings.HasPrefix(lower, "r")) && (len(lower) == 1 || allDecimalDigits(lower[1:])))
+	if !parameterContext {
+		return completionList{}, false
+	}
+
+	parameters, incomplete := server.parameters.Complete(prefix, 200)
+	items := make([]completionItem, 0, len(parameters))
+	for _, parameter := range parameters {
+		hover, _ := server.parameters.Hover(parameter.Identifier)
+		items = append(items, completionItem{
+			Label: parameter.Identifier, Kind: 6, Detail: parameterCompletionDetail(parameter),
+			Documentation: &markupContent{Kind: "markdown", Value: hover}, InsertText: parameter.Identifier,
+		})
+	}
+	return completionList{IsIncomplete: incomplete, Items: items}, true
+}
+
+func parameterCompletionDetail(parameter database.Parameter) string {
+	identifier := strings.ToLower(parameter.Identifier)
+	kind := "Database parameter"
+	switch {
+	case strings.HasPrefix(identifier, "p"):
+		kind = "SINAMICS write parameter"
+	case strings.HasPrefix(identifier, "r"):
+		kind = "SINAMICS read parameter"
+	case strings.HasPrefix(identifier, "$mn"), strings.HasPrefix(identifier, "$mc"), strings.HasPrefix(identifier, "$ma"), strings.HasPrefix(identifier, "$mm"):
+		kind = "Machine data"
+	case strings.HasPrefix(identifier, "$sn"), strings.HasPrefix(identifier, "$sc"), strings.HasPrefix(identifier, "$sa"):
+		kind = "Setting data"
+	case strings.HasPrefix(identifier, "$on"):
+		kind = "Option data"
+	case strings.HasPrefix(identifier, "$"):
+		kind = "System variable"
+	}
+	metadata := kind
+	if parameter.Type != "" {
+		metadata += " · " + parameter.Type
+	}
+	if parameter.Brief != "" {
+		metadata += " — " + parameter.Brief
+	}
+	return metadata
+}
+
+func identifierCompletionPrefixAt(text string, target position) string {
+	lines := strings.Split(text, "\n")
+	if target.Line < 0 || target.Line >= len(lines) {
+		return ""
+	}
+	runes := []rune(strings.TrimSuffix(lines[target.Line], "\r"))
+	column := utf16ToRuneColumn(runes, target.Character)
+	if column < 0 || column > len(runes) {
+		return ""
+	}
+	allowed := func(value rune) bool {
+		return unicode.IsLetter(value) || unicode.IsNumber(value) || strings.ContainsRune("_$.", value)
+	}
+	start := column
+	for start > 0 && allowed(runes[start-1]) {
+		start--
+	}
+	return string(runes[start:column])
 }
 
 func (server *Lsp) handleDefinition(message requestMessage) {
