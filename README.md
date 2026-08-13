@@ -115,9 +115,9 @@ access mode, localized description, and manual reference.
 
 ### Siemens parameter database
 
-If a Siemens `DataBase` directory is present in the workspace or one of its parent directories, the server loads its `.mdat`, `.svar`, and `.para` XML files at startup. Hover then shows the supplied descriptions for NC machine/setting data, system variables, and SINAMICS `p`/`r` parameters. The files are parsed directly, so the database can be updated by replacing the directory.
+On Windows, the server checks `HKEY_LOCAL_MACHINE\SOFTWARE\Siemens\Automation\_InstalledSW` for installed CMC versions containing `SIEMENS_CMC_DIFF` and loads the `DataBase` directory below the newest version's installation path. It also searches for a Siemens `DataBase` directory in the workspace or one of its parent directories. Hover then shows the supplied `.mdat`, `.svar`, and `.para` descriptions for NC machine/setting data, system variables, and SINAMICS `p`/`r` parameters. The files are parsed directly, so the database can be updated by replacing the directory.
 
-The server uses the LSP client's `locale`: German locales use the descriptions in the `DataBase` root, while other locales prefer a matching language directory and then `DataBase/en`. To keep the data elsewhere, pass `cmcDatabasePath` in the LSP `initializationOptions` object.
+The server uses the LSP client's `locale`: German locales use the descriptions in the `DataBase` root, while other locales prefer a matching language directory and then `DataBase/en`. To keep the data elsewhere or override automatic discovery, pass `cmcDatabasePath` in the LSP `initializationOptions` object.
 
 ## Formatter
 

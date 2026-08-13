@@ -1,5 +1,6 @@
 /bin/
 /tmp/
+/.cache/
 /DataBase/
 /cmc_projekt/
 .DS_Store

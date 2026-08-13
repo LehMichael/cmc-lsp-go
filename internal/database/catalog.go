@@ -64,13 +64,15 @@ func Load(directory, locale string) (*Catalog, error) {
 	return catalog, nil
 }
 
-// Locate searches an explicit location, workspace ancestors, the executable
-// directory, and the current directory for a replaceable DataBase directory.
+// Locate searches an explicit location, installed CMC Diff versions, workspace
+// ancestors, the executable directory, and the current directory for a
+// replaceable DataBase directory.
 func Locate(roots []string, configured string) string {
 	var candidates []string
 	if configured != "" {
 		candidates = append(candidates, configured)
 	}
+	candidates = append(candidates, installedDatabaseCandidates()...)
 	for _, root := range roots {
 		candidates = append(candidates, databaseCandidatesInAncestors(root)...)
 	}
@@ -108,6 +110,71 @@ func databaseCandidatesInAncestors(path string) []string {
 			return candidates
 		}
 	}
+}
+
+type cmcInstallation struct {
+	version string
+	path    string
+}
+
+func databaseCandidatesForInstallations(installations []cmcInstallation) []string {
+	slices.SortStableFunc(installations, func(left, right cmcInstallation) int {
+		return compareVersion(right.version, left.version)
+	})
+
+	seen := make(map[string]struct{}, len(installations))
+	candidates := make([]string, 0, len(installations))
+	for _, installation := range installations {
+		if strings.TrimSpace(installation.path) == "" {
+			continue
+		}
+		candidate := filepath.Clean(filepath.Join(installation.path, "DataBase"))
+		key := strings.ToLower(candidate)
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		candidates = append(candidates, candidate)
+	}
+	return candidates
+}
+
+func compareVersion(left, right string) int {
+	leftNumbers := versionNumbers(left)
+	rightNumbers := versionNumbers(right)
+	for index := 0; index < max(len(leftNumbers), len(rightNumbers)); index++ {
+		var leftNumber, rightNumber int
+		if index < len(leftNumbers) {
+			leftNumber = leftNumbers[index]
+		}
+		if index < len(rightNumbers) {
+			rightNumber = rightNumbers[index]
+		}
+		if leftNumber != rightNumber {
+			return leftNumber - rightNumber
+		}
+	}
+	return 0
+}
+
+func versionNumbers(version string) []int {
+	var numbers []int
+	for index := 0; index < len(version); {
+		if version[index] < '0' || version[index] > '9' {
+			index++
+			continue
+		}
+		end := index + 1
+		for end < len(version) && version[end] >= '0' && version[end] <= '9' {
+			end++
+		}
+		number, err := strconv.Atoi(version[index:end])
+		if err == nil {
+			numbers = append(numbers, number)
+		}
+		index = end
+	}
+	return numbers
 }
 
 func (catalog *Catalog) Count() int {

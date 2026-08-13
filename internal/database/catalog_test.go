@@ -87,6 +87,47 @@ func TestLocate(t *testing.T) {
 	}
 }
 
+func TestDatabaseCandidatesForInstallationsNewestFirst(t *testing.T) {
+	installations := []cmcInstallation{
+		{version: "06.08.00.00.0000", path: filepath.Join("C:", "CMC 6.8")},
+		{version: "V6.10.0.0", path: filepath.Join("C:", "CMC 6.10")},
+		{version: "V6.9.2.0", path: filepath.Join("C:", "CMC 6.9")},
+		{version: "V6.10", path: filepath.Join("C:", "CMC 6.10")},
+	}
+
+	got := databaseCandidatesForInstallations(installations)
+	want := []string{
+		filepath.Join("C:", "CMC 6.10", "DataBase"),
+		filepath.Join("C:", "CMC 6.9", "DataBase"),
+		filepath.Join("C:", "CMC 6.8", "DataBase"),
+	}
+	if !slices.Equal(got, want) {
+		t.Fatalf("databaseCandidatesForInstallations() = %#v, want %#v", got, want)
+	}
+}
+
+func TestCompareVersion(t *testing.T) {
+	for _, test := range []struct {
+		left  string
+		right string
+		want  int
+	}{
+		{left: "V6.10", right: "V6.9", want: 1},
+		{left: "06.08.00.00.0000", right: "V6.8.0.0", want: 0},
+		{left: "CMC 7.0", right: "V6.10.4", want: 1},
+	} {
+		got := compareVersion(test.left, test.right)
+		if got < 0 {
+			got = -1
+		} else if got > 0 {
+			got = 1
+		}
+		if got != test.want {
+			t.Errorf("compareVersion(%q, %q) = %d, want %d", test.left, test.right, got, test.want)
+		}
+	}
+}
+
 func writeTestFile(t *testing.T, path, contents string) {
 	t.Helper()
 	if err := os.WriteFile(path, []byte(contents), 0o644); err != nil {

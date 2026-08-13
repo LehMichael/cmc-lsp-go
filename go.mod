@@ -4,7 +4,10 @@ go 1.26.3
 
 tool github.com/dmarkham/enumer
 
-require github.com/google/go-cmp v0.6.0
+require (
+	github.com/google/go-cmp v0.6.0
+	golang.org/x/sys v0.46.0
+)
 
 require (
 	github.com/dmarkham/enumer v1.6.3 // indirect
