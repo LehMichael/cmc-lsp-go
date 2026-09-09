@@ -8,12 +8,14 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/lehmichael/cmc-lsp-go/internal/analysis"
 	"github.com/lehmichael/cmc-lsp-go/internal/document"
 	"github.com/lehmichael/cmc-lsp-go/internal/formatter"
 	"github.com/lehmichael/cmc-lsp-go/internal/lexer"
 	"github.com/lehmichael/cmc-lsp-go/internal/parser"
 	"github.com/lehmichael/cmc-lsp-go/internal/project"
 	"github.com/lehmichael/cmc-lsp-go/internal/textencoding"
+	"github.com/lehmichael/cmc-lsp-go/internal/workspace"
 )
 
 func main() {
@@ -30,6 +32,7 @@ func main() {
 		os.Exit(2)
 	}
 	failures := 0
+	overlay := workspace.NewOverlay()
 	for _, path := range files {
 		input, err := os.ReadFile(path)
 		if err != nil {
@@ -39,7 +42,8 @@ func main() {
 		}
 		text, _ := textencoding.Decode(input)
 		tokens, diagnostics := lexer.Tokenize(document.CMCText(path, text))
-		_, diagnostics = parser.Parse(tokens, diagnostics)
+		ast, diagnostics := parser.Parse(tokens, diagnostics)
+		diagnostics = append(diagnostics, analysis.ValidateSectionAccesses(path, ast, overlay)...)
 		for _, item := range diagnostics {
 			fmt.Printf("%s:%d:%d: %s\n", path, item.Range.Start.Line+1, item.Range.Start.Column+1, item.Kind.String())
 		}

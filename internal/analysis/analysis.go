@@ -107,6 +107,9 @@ func Analyze(root string, ws *workspace.Overlay) ([]Symbol, []diag.Diagnostic) {
 	}
 
 	walk(root, nil, make(map[string]struct{}))
+	if rootDocument, ok := parsed[root]; ok {
+		di = append(di, ValidateSectionAccesses(root, rootDocument.Ast, ws)...)
+	}
 
 	return sym, di
 }

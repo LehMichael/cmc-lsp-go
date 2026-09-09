@@ -4,6 +4,7 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/lehmichael/cmc-lsp-go/internal/diag"
 	"github.com/lehmichael/cmc-lsp-go/internal/lexer"
 )
 
@@ -111,6 +112,59 @@ func TestSystemVariableIdentifier(t *testing.T) {
 	}
 	if !slices.Equal(got, want) {
 		t.Fatalf("assignments = %#v", got)
+	}
+}
+
+func TestDynamicSectionPreservesNamespace(t *testing.T) {
+	input := "PS[$(Up.path)]\nNC[C$(Up.channel)]\nBD[$(Up.display)]\n"
+	tokens, diagnostics := lexer.Tokenize(input)
+	statements, diagnostics := Parse(tokens, diagnostics)
+	if len(diagnostics) != 0 {
+		t.Fatalf("diagnostics = %#v", diagnostics)
+	}
+	wantNamespaces := []SectionNamespaceKind{Ps, Nc, Bd}
+	wantStrings := []string{"PS[$(Up.path)]", "NC[C$(Up.channel)]", "BD[$(Up.display)]"}
+	statementIndex := 0
+	for _, statement := range statements {
+		sectionSwitch, ok := statement.Kind.(SectionSwitch)
+		if !ok {
+			continue
+		}
+		section, ok := sectionSwitch.Kind.(DynamicSection)
+		if !ok {
+			t.Fatalf("section %d = %#v", statementIndex, sectionSwitch.Kind)
+		}
+		if section.Namespace != wantNamespaces[statementIndex] || SectionString(section) != wantStrings[statementIndex] {
+			t.Errorf("section %d = %#v (%q)", statementIndex, section, SectionString(section))
+		}
+		statementIndex++
+	}
+	if statementIndex != len(wantNamespaces) {
+		t.Fatalf("got %d dynamic sections", statementIndex)
+	}
+}
+
+func TestIdentifierIndexCommaWhitespace(t *testing.T) {
+	input := "Up.value = $MA_MAX_AX_VELO[0, AX3]\n"
+	tokens, diagnostics := lexer.Tokenize(input)
+	_, diagnostics = Parse(tokens, diagnostics)
+	if len(diagnostics) != 1 {
+		t.Fatalf("diagnostics = %#v, want one", diagnostics)
+	}
+	diagnostic := diagnostics[0]
+	if diagnostic.Kind != diag.IdentifierIndexCommaWhitespace {
+		t.Fatalf("diagnostic kind = %v", diagnostic.Kind)
+	}
+	if diagnostic.Range.Start.Line != 0 || diagnostic.Range.Start.Column != 29 ||
+		diagnostic.Range.End.Line != 0 || diagnostic.Range.End.Column != 30 {
+		t.Fatalf("diagnostic range = %#v", diagnostic.Range)
+	}
+
+	input = "Up.value = $MA_MAX_AX_VELO[0,AX3]\nMsg(1, 2)\n"
+	tokens, diagnostics = lexer.Tokenize(input)
+	_, diagnostics = Parse(tokens, diagnostics)
+	if len(diagnostics) != 0 {
+		t.Fatalf("valid input diagnostics = %#v", diagnostics)
 	}
 }
 

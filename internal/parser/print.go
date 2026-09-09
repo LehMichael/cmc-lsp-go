@@ -54,7 +54,18 @@ func SectionString(section SectionSwitchKind) string {
 		}
 		return fmt.Sprintf("%s[%s]", prefix, section.Name)
 	case DynamicSection:
-		return string(section)
+		prefix := ""
+		switch section.Namespace {
+		case Chandata:
+			prefix = "CHANDATA"
+		case Ps:
+			prefix = "PS"
+		case Nc:
+			prefix = "NC"
+		case Bd:
+			prefix = "BD"
+		}
+		return prefix + section.Value
 	case InvalidSection:
 		return "<invalid section>"
 	default:

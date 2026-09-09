@@ -8,11 +8,11 @@ import (
 	"strings"
 )
 
-const _DiagnosticKindName = "UnexpectedTokenFunctionInvalidIdentifierFunctionInvalidParameterDefFunctionInvalidBeforeOpeningBraceFunctionMissingOpeningBraceFunctionBodyClosingBraceMissingSectionInvalidDriveSectionInvalidChanSectionFormatUnrecognicedPreprocessorUnknownExpressionGroupedMissingClosingParenthesesNumberLiteralInvalidExponentNumberLiteralParseErrorBicoLiteralParseErrorVersionLiteralParserErrorExpressionInvalidBitwiseLiteralInvalidHexBitwiseLiteralInvalidBinExpressionReplacementMissingClosingParenthesesWhileEndMissingIfThenEndMissingIfElseIfEndMissingIfElseEndMissingCallStatementMalformedInvaliStatementFullyQualifiedIdentMissingSectionUnterminatedStringUnterminatedNumberFormatUnterminatedMissingIncludeCircularInclude"
+const _DiagnosticKindName = "UnexpectedTokenFunctionInvalidIdentifierFunctionInvalidParameterDefFunctionInvalidBeforeOpeningBraceFunctionMissingOpeningBraceFunctionBodyClosingBraceMissingSectionInvalidDriveSectionInvalidChanSectionFormatUnrecognicedPreprocessorUnknownExpressionGroupedMissingClosingParenthesesNumberLiteralInvalidExponentNumberLiteralParseErrorBicoLiteralParseErrorVersionLiteralParserErrorExpressionInvalidBitwiseLiteralInvalidHexBitwiseLiteralInvalidBinExpressionReplacementMissingClosingParenthesesWhileEndMissingIfThenEndMissingIfElseIfEndMissingIfElseEndMissingCallStatementMalformedInvaliStatementFullyQualifiedIdentMissingSectionUnterminatedStringUnterminatedNumberFormatUnterminatedMissingIncludeCircularIncludeFunctionInScriptIdentifierIndexCommaWhitespaceNCDataSectionRequiredDriveDataSectionRequiredDisplayDataSectionRequiredFullyQualifiedIdentifierWrite"
 
-var _DiagnosticKindIndex = [...]uint16{0, 15, 40, 67, 100, 127, 158, 177, 195, 220, 239, 281, 309, 332, 353, 378, 395, 419, 443, 489, 504, 520, 538, 554, 576, 591, 617, 636, 654, 678, 692, 707}
+var _DiagnosticKindIndex = [...]uint16{0, 15, 40, 67, 100, 127, 158, 177, 195, 220, 239, 281, 309, 332, 353, 378, 395, 419, 443, 489, 504, 520, 538, 554, 576, 591, 617, 636, 654, 678, 692, 707, 723, 753, 774, 798, 824, 853}
 
-const _DiagnosticKindLowerName = "unexpectedtokenfunctioninvalididentifierfunctioninvalidparameterdeffunctioninvalidbeforeopeningbracefunctionmissingopeningbracefunctionbodyclosingbracemissingsectioninvaliddrivesectioninvalidchansectionformatunrecognicedpreprocessorunknownexpressiongroupedmissingclosingparenthesesnumberliteralinvalidexponentnumberliteralparseerrorbicoliteralparseerrorversionliteralparsererrorexpressioninvalidbitwiseliteralinvalidhexbitwiseliteralinvalidbinexpressionreplacementmissingclosingparentheseswhileendmissingifthenendmissingifelseifendmissingifelseendmissingcallstatementmalformedinvalistatementfullyqualifiedidentmissingsectionunterminatedstringunterminatednumberformatunterminatedmissingincludecircularinclude"
+const _DiagnosticKindLowerName = "unexpectedtokenfunctioninvalididentifierfunctioninvalidparameterdeffunctioninvalidbeforeopeningbracefunctionmissingopeningbracefunctionbodyclosingbracemissingsectioninvaliddrivesectioninvalidchansectionformatunrecognicedpreprocessorunknownexpressiongroupedmissingclosingparenthesesnumberliteralinvalidexponentnumberliteralparseerrorbicoliteralparseerrorversionliteralparsererrorexpressioninvalidbitwiseliteralinvalidhexbitwiseliteralinvalidbinexpressionreplacementmissingclosingparentheseswhileendmissingifthenendmissingifelseifendmissingifelseendmissingcallstatementmalformedinvalistatementfullyqualifiedidentmissingsectionunterminatedstringunterminatednumberformatunterminatedmissingincludecircularincludefunctioninscriptidentifierindexcommawhitespacencdatasectionrequireddrivedatasectionrequireddisplaydatasectionrequiredfullyqualifiedidentifierwrite"
 
 func (i DiagnosticKind) String() string {
 	if i < 0 || i >= DiagnosticKind(len(_DiagnosticKindIndex)-1) {
@@ -56,9 +56,15 @@ func _DiagnosticKindNoOp() {
 	_ = x[NumberFormatUnterminated-(28)]
 	_ = x[MissingInclude-(29)]
 	_ = x[CircularInclude-(30)]
+	_ = x[FunctionInScript-(31)]
+	_ = x[IdentifierIndexCommaWhitespace-(32)]
+	_ = x[NCDataSectionRequired-(33)]
+	_ = x[DriveDataSectionRequired-(34)]
+	_ = x[DisplayDataSectionRequired-(35)]
+	_ = x[FullyQualifiedIdentifierWrite-(36)]
 }
 
-var _DiagnosticKindValues = []DiagnosticKind{UnexpectedToken, FunctionInvalidIdentifier, FunctionInvalidParameterDef, FunctionInvalidBeforeOpeningBrace, FunctionMissingOpeningBrace, FunctionBodyClosingBraceMissing, SectionInvalidDrive, SectionInvalidChan, SectionFormatUnrecogniced, PreprocessorUnknown, ExpressionGroupedMissingClosingParentheses, NumberLiteralInvalidExponent, NumberLiteralParseError, BicoLiteralParseError, VersionLiteralParserError, ExpressionInvalid, BitwiseLiteralInvalidHex, BitwiseLiteralInvalidBin, ExpressionReplacementMissingClosingParentheses, WhileEndMissing, IfThenEndMissing, IfElseIfEndMissing, IfElseEndMissing, CallStatementMalformed, InvaliStatement, FullyQualifiedIdentMissing, SectionUnterminated, StringUnterminated, NumberFormatUnterminated, MissingInclude, CircularInclude}
+var _DiagnosticKindValues = []DiagnosticKind{UnexpectedToken, FunctionInvalidIdentifier, FunctionInvalidParameterDef, FunctionInvalidBeforeOpeningBrace, FunctionMissingOpeningBrace, FunctionBodyClosingBraceMissing, SectionInvalidDrive, SectionInvalidChan, SectionFormatUnrecogniced, PreprocessorUnknown, ExpressionGroupedMissingClosingParentheses, NumberLiteralInvalidExponent, NumberLiteralParseError, BicoLiteralParseError, VersionLiteralParserError, ExpressionInvalid, BitwiseLiteralInvalidHex, BitwiseLiteralInvalidBin, ExpressionReplacementMissingClosingParentheses, WhileEndMissing, IfThenEndMissing, IfElseIfEndMissing, IfElseEndMissing, CallStatementMalformed, InvaliStatement, FullyQualifiedIdentMissing, SectionUnterminated, StringUnterminated, NumberFormatUnterminated, MissingInclude, CircularInclude, FunctionInScript, IdentifierIndexCommaWhitespace, NCDataSectionRequired, DriveDataSectionRequired, DisplayDataSectionRequired, FullyQualifiedIdentifierWrite}
 
 var _DiagnosticKindNameToValueMap = map[string]DiagnosticKind{
 	_DiagnosticKindName[0:15]:         UnexpectedToken,
@@ -123,6 +129,18 @@ var _DiagnosticKindNameToValueMap = map[string]DiagnosticKind{
 	_DiagnosticKindLowerName[678:692]: MissingInclude,
 	_DiagnosticKindName[692:707]:      CircularInclude,
 	_DiagnosticKindLowerName[692:707]: CircularInclude,
+	_DiagnosticKindName[707:723]:      FunctionInScript,
+	_DiagnosticKindLowerName[707:723]: FunctionInScript,
+	_DiagnosticKindName[723:753]:      IdentifierIndexCommaWhitespace,
+	_DiagnosticKindLowerName[723:753]: IdentifierIndexCommaWhitespace,
+	_DiagnosticKindName[753:774]:      NCDataSectionRequired,
+	_DiagnosticKindLowerName[753:774]: NCDataSectionRequired,
+	_DiagnosticKindName[774:798]:      DriveDataSectionRequired,
+	_DiagnosticKindLowerName[774:798]: DriveDataSectionRequired,
+	_DiagnosticKindName[798:824]:      DisplayDataSectionRequired,
+	_DiagnosticKindLowerName[798:824]: DisplayDataSectionRequired,
+	_DiagnosticKindName[824:853]:      FullyQualifiedIdentifierWrite,
+	_DiagnosticKindLowerName[824:853]: FullyQualifiedIdentifierWrite,
 }
 
 var _DiagnosticKindNames = []string{
@@ -157,6 +175,12 @@ var _DiagnosticKindNames = []string{
 	_DiagnosticKindName[654:678],
 	_DiagnosticKindName[678:692],
 	_DiagnosticKindName[692:707],
+	_DiagnosticKindName[707:723],
+	_DiagnosticKindName[723:753],
+	_DiagnosticKindName[753:774],
+	_DiagnosticKindName[774:798],
+	_DiagnosticKindName[798:824],
+	_DiagnosticKindName[824:853],
 }
 
 // DiagnosticKindString retrieves an enum value from the enum constants string name.

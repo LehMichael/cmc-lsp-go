@@ -103,3 +103,27 @@ func TestServerDocumentLifecycleAndFormatting(t *testing.T) {
 		t.Fatal("invalid changed document produced no diagnostics")
 	}
 }
+
+func TestServerPublishesSectionAccessDiagnostics(t *testing.T) {
+	var output bytes.Buffer
+	server := NewLsp(bytes.NewReader(nil), &output)
+	text := "NC[C1]\n$MC_CHAN_NAME = \"valid\"\nPS[B3_S3_PS3]\nP105 = 1\n$MC_CHAN_NAME = \"invalid\"\n"
+	server.publishDiagnostics("file:///tmp/sections.upscr", text, 1)
+
+	payload, err := readFrame(bufio.NewReader(&output))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var message map[string]any
+	if err := json.Unmarshal(payload, &message); err != nil {
+		t.Fatal(err)
+	}
+	diagnostics := message["params"].(map[string]any)["diagnostics"].([]any)
+	if len(diagnostics) != 1 {
+		t.Fatalf("diagnostics = %#v", diagnostics)
+	}
+	diagnostic := diagnostics[0].(map[string]any)
+	if diagnostic["code"] != "NCDataSectionRequired" || diagnostic["message"] != "NC data requires an active NC section" {
+		t.Fatalf("diagnostic = %#v", diagnostic)
+	}
+}

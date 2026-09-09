@@ -280,6 +280,7 @@ func (l *Lexer) createIdentifierToken(leadingWhitespace string) Token {
 	currentChar := l.getCurrentChar()
 	nextChar := l.getNextChar()
 	atLineStart := l.lastTokenKind == NewLine
+	atIdentifierStart := canStartQualifiedIdentifier(l.lastTokenKind)
 	if l.lastTokenKind == LiteralNumber && unicode.ToLower(currentChar) == 'e' {
 		if unicode.ToLower(nextChar) == 'x' {
 			return l.createTokenCount(LiteralNumberEx, leadingWhitespace, 2)
@@ -320,13 +321,13 @@ func (l *Lexer) createIdentifierToken(leadingWhitespace string) Token {
 		token.Kind = KeywordFunc
 	case strings.EqualFold(token.Lexeme, "return"):
 		token.Kind = KeywordReturn
-	case strings.EqualFold(token.Lexeme, "nc"):
+	case atIdentifierStart && strings.EqualFold(token.Lexeme, "nc"):
 		token.Kind = KeywordNamespaceNc
-	case strings.EqualFold(token.Lexeme, "ps"):
+	case atIdentifierStart && strings.EqualFold(token.Lexeme, "ps"):
 		token.Kind = KeywordNamespacePs
-	case strings.EqualFold(token.Lexeme, "bd"):
+	case atIdentifierStart && strings.EqualFold(token.Lexeme, "bd"):
 		token.Kind = KeywordNamespaceBd
-	case strings.EqualFold(token.Lexeme, "chandata"):
+	case atIdentifierStart && strings.EqualFold(token.Lexeme, "chandata"):
 		token.Kind = KeywordNamespaceChan
 	}
 
@@ -337,6 +338,24 @@ func (l *Lexer) createIdentifierToken(leadingWhitespace string) Token {
 	l.lastTokenKind = token.Kind
 
 	return token
+}
+
+func canStartQualifiedIdentifier(previous TokenKind) bool {
+	switch previous {
+	case NewLine, LiteralBlockNumber,
+		OperatorAssign, OperatorAssignRaw, OperatorAssignIfBlank,
+		OperatorAddAssign, OperatorSubtractAssign, OperatorMultiplyAssign,
+		OperatorDivideAssign, OperatorOrAssign, OperatorAndAssign,
+		OperatorEqual, OperatorUnequal, OperatorLessThan, OperatorLessThanEqual,
+		OperatorGreaterThan, OperatorGreaterThanEqual, OperatorLogAnd, OperatorLogOr,
+		OperatorStringConcat, OperatorAdd, OperatorSubtract, OperatorMultiply,
+		OperatorDivide, OperatorAnd, OperatorOr, OperatorNegate,
+		SymbolLeftParen, SymbolComma, SymbolDollarParen,
+		KeywordIf, KeywordElseIf, KeywordWhile:
+		return true
+	default:
+		return false
+	}
 }
 
 func isBlockNumber(value string) bool {

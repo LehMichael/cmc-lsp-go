@@ -46,6 +46,18 @@ release artifacts. Preserve the ability to update it by replacing the local
 directory as-is. `cmc_projekt` is a large ignored reference project used for
 corpus testing and must not be committed.
 
+CMC requires compact comma-separated identifier indices, such as
+`$MA_MAX_AX_VELO[0,AX3]`; whitespace after the comma is a runtime syntax error.
+Keep this distinct from callable argument lists, whose commas are formatted
+with a following space.
+
+Only one area section is active at a time. Global scripts start without an
+active section: unqualified NC, SINAMICS, or display-data access requires a
+preceding matching `NC`/channel, `PS`, or `BD` section selector. A fully
+qualified area identifier overrides the active section for reads only; writes
+and deletes must use a standalone section selector followed by an unqualified
+identifier.
+
 ## Completion behavior
 
 Completion is context-sensitive; do not solve member completion by returning

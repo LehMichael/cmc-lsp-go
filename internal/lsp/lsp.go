@@ -13,6 +13,7 @@ import (
 	"unicode/utf16"
 	"unicode/utf8"
 
+	"github.com/lehmichael/cmc-lsp-go/internal/analysis"
 	"github.com/lehmichael/cmc-lsp-go/internal/database"
 	"github.com/lehmichael/cmc-lsp-go/internal/diag"
 	"github.com/lehmichael/cmc-lsp-go/internal/document"
@@ -361,6 +362,7 @@ func (server *Lsp) publishDiagnostics(uri, text string, version int) {
 	tokens, diagnostics := lexer.Tokenize(cmcText)
 	ast, diagnostics := parser.Parse(tokens, diagnostics)
 	if path, err := workspace.URIToPath(uri); err == nil {
+		diagnostics = append(diagnostics, analysis.ValidateSectionAccesses(path, ast, server.overlay)...)
 		for _, statement := range ast {
 			switch kind := statement.Kind.(type) {
 			case parser.PreprocessorStatement:
@@ -476,6 +478,11 @@ var diagnosticMessages = map[diag.DiagnosticKind]string{
 	diag.IfThenEndMissing:                               "If block is missing EndIf",
 	diag.StringUnterminated:                             "Unterminated string literal",
 	diag.NumberFormatUnterminated:                       "Unterminated single-quoted literal",
+	diag.IdentifierIndexCommaWhitespace:                 "Whitespace is not allowed after commas in identifier indices",
+	diag.NCDataSectionRequired:                          "NC data requires an active NC section",
+	diag.DriveDataSectionRequired:                       "SINAMICS drive data requires an active PS section",
+	diag.DisplayDataSectionRequired:                     "Display data requires an active BD section",
+	diag.FullyQualifiedIdentifierWrite:                  "Fully qualified identifiers are read-only; select the section before writing",
 	diag.MissingInclude:                                 "Included file was not found",
 	diag.CircularInclude:                                "Circular include",
 	diag.FunctionInScript:                               "Function and procedure definitions are only allowed in .uplib files",

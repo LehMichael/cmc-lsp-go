@@ -38,7 +38,7 @@ Configure an LSP client with:
 - File extensions: `.upscr`, `.uplib`, `.upact`, `.tea`
 - Language ID: `cmc`
 
-The server supports full document synchronization, live syntax diagnostics, semantic syntax highlighting, whole-document formatting, document/workspace symbols, completion, hover documentation, definitions, clickable and navigable `#include` paths, dynamic-aware references, signature help, and safe callable rename. It uses UTF-16 positions as required by the default LSP encoding.
+The server supports full document synchronization, live syntax and section-aware area-access diagnostics, semantic syntax highlighting, whole-document formatting, document/workspace symbols, completion, hover documentation, definitions, clickable and navigable `#include` paths, dynamic-aware references, signature help, and safe callable rename. It uses UTF-16 positions as required by the default LSP encoding.
 
 ### Zed
 
@@ -139,7 +139,7 @@ Check formatting without changing files:
 cmc-fmt -check script.upscr
 ```
 
-The default style uses four spaces per nesting level, spaces around operators, one space after commas, two spaces before trailing comments, and aligns consecutive assignments and trailing comments. Use `-tab-size`, `-tabs`, `-comment-spaces`, `-align-consecutive-assignments`, or `-align-trailing-comments` to customize the CLI. Boolean flags can be disabled with `-flag=false`. LSP formatting honors the editor's `tabSize` and `insertSpaces` settings and accepts the optional `cmcCommentSpaces`, `cmcAlignConsecutiveAssignments`, and `cmcAlignTrailingComments` formatting properties.
+The default style uses four spaces per nesting level, spaces around operators, one space after argument commas, two spaces before trailing comments, and aligns consecutive assignments and trailing comments. Commas in bracketed identifier indices remain compact because CMC rejects whitespace there (for example, `$MA_MAX_AX_VELO[0,AX3]`). Use `-tab-size`, `-tabs`, `-comment-spaces`, `-align-consecutive-assignments`, or `-align-trailing-comments` to customize the CLI. Boolean flags can be disabled with `-flag=false`. LSP formatting honors the editor's `tabSize` and `insertSpaces` settings and accepts the optional `cmcCommentSpaces`, `cmcAlignConsecutiveAssignments`, and `cmcAlignTrailingComments` formatting properties.
 
 ## Project validation
 

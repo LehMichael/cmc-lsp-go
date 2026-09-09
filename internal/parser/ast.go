@@ -144,7 +144,10 @@ func (DisplaySection) isSectionSwitchKind() {}
 
 // DynamicSection represents a section containing replacement operators, for
 // example [$(Up.drive.psPath)]. Its final value is only known at runtime.
-type DynamicSection string
+type DynamicSection struct {
+	Value     string
+	Namespace SectionNamespaceKind
+}
 
 func (DynamicSection) isSectionSwitchKind() {}
 

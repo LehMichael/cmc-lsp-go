@@ -24,6 +24,17 @@ func TestFormatLibraryAndReplacement(t *testing.T) {
 	}
 }
 
+func TestFormatIdentifierIndexCommaSpacing(t *testing.T) {
+	input := "Up.result=Func($MA_MAX_AX_VELO[0, AX3],2)\n\n$MA_AX_VELO_LIMIT[$(Up.dataSet), AX$(Up.axis)]?=2300\n"
+	want := "Up.result = Func($MA_MAX_AX_VELO[0,AX3], 2)\n\n$MA_AX_VELO_LIMIT[$(Up.dataSet),AX$(Up.axis)] ?= 2300\n"
+	if got := Format(input, DefaultOptions()); got != want {
+		t.Fatalf("Format mismatch\nwant:\n%s\ngot:\n%s", want, got)
+	}
+	if got := Format(want, DefaultOptions()); got != want {
+		t.Fatalf("Format is not idempotent\nwant:\n%s\ngot:\n%s", want, got)
+	}
+}
+
 func TestConfigurableIndentAndComments(t *testing.T) {
 	options := Options{TabSize: 8, InsertSpaces: false, CommentSpaces: 3}
 	input := "If true ; note\nUp.x=1\nEndIf\n"

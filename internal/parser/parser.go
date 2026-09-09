@@ -627,7 +627,7 @@ func (p *parser) parseSection() SectionSwitchKind {
 	upper := strings.ToUpper(lexeme)
 	switch {
 	case strings.Contains(lexeme, "$("):
-		return DynamicSection(lexeme)
+		return DynamicSection{Value: lexeme, Namespace: ns}
 	case strings.HasPrefix(upper, "[B"):
 		if s, err := parseDriveSection(lexeme, ns); err == nil {
 			return s
@@ -1628,10 +1628,24 @@ func (p *parser) parseIdentifier(section *SectionSwitchKind) IdentifierExpressio
 		case l.SymbolLeftBracket:
 			var raw strings.Builder
 			depth := 0
+			parentheses := 0
+			previousKind := l.Unknown
 			for {
 				t := p.currentToken()
 				if t.Kind == l.EOF || t.Kind == l.NewLine {
 					break
+				}
+				if previousKind == l.SymbolComma && depth == 1 && parentheses == 0 && t.LeadingWhitespace != "" {
+					whitespaceLength := len([]rune(t.LeadingWhitespace))
+					p.Diagnostics = append(p.Diagnostics, diag.Diagnostic{
+						Kind: diag.IdentifierIndexCommaWhitespace,
+						Range: source.NewRange(
+							t.Range.Start.Line,
+							t.Range.Start.Column-whitespaceLength,
+							whitespaceLength,
+						),
+						Severity: diag.Error,
+					})
 				}
 				raw.WriteString(t.Lexeme)
 				endToken = t
@@ -1643,7 +1657,12 @@ func (p *parser) parseIdentifier(section *SectionSwitchKind) IdentifierExpressio
 					if depth == 0 {
 						break
 					}
+				} else if t.Kind == l.SymbolLeftParen || t.Kind == l.SymbolDollarParen {
+					parentheses++
+				} else if t.Kind == l.SymbolRightParen && parentheses > 0 {
+					parentheses--
 				}
+				previousKind = t.Kind
 			}
 			parts = append(parts, IndexIdentifier(raw.String()))
 		case l.SymbolDot:

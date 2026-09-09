@@ -221,10 +221,40 @@ func separator(tokens []lexer.Token, index int, options Options) string {
 		}
 		return " "
 	}
-	if previous.Kind == lexer.SymbolComma || wordsNeedSpace(previous.Kind, current.Kind) {
+	if previous.Kind == lexer.SymbolComma {
+		if commaSeparatesIndex(tokens, index) {
+			return ""
+		}
+		return " "
+	}
+	if wordsNeedSpace(previous.Kind, current.Kind) {
 		return " "
 	}
 	return ""
+}
+
+// commaSeparatesIndex distinguishes CMC's compact identifier-index syntax
+// ([0,AX1]) from ordinary comma-separated arguments, which use a space.
+func commaSeparatesIndex(tokens []lexer.Token, index int) bool {
+	var delimiters []lexer.TokenKind
+	for _, token := range tokens[:index-1] {
+		switch token.Kind {
+		case lexer.SymbolLeftBracket, lexer.SymbolLeftParen, lexer.SymbolDollarParen:
+			delimiters = append(delimiters, token.Kind)
+		case lexer.SymbolRightBracket:
+			if len(delimiters) > 0 && delimiters[len(delimiters)-1] == lexer.SymbolLeftBracket {
+				delimiters = delimiters[:len(delimiters)-1]
+			}
+		case lexer.SymbolRightParen:
+			if len(delimiters) > 0 {
+				top := delimiters[len(delimiters)-1]
+				if top == lexer.SymbolLeftParen || top == lexer.SymbolDollarParen {
+					delimiters = delimiters[:len(delimiters)-1]
+				}
+			}
+		}
+	}
+	return len(delimiters) > 0 && delimiters[len(delimiters)-1] == lexer.SymbolLeftBracket
 }
 
 func noSpaceBefore(kind lexer.TokenKind) bool {

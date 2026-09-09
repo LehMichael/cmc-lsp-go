@@ -50,6 +50,13 @@ const (
 	MissingInclude
 	CircularInclude
 	FunctionInScript
+
+	// CMC runtime syntax compatibility
+	IdentifierIndexCommaWhitespace
+	NCDataSectionRequired
+	DriveDataSectionRequired
+	DisplayDataSectionRequired
+	FullyQualifiedIdentifierWrite
 )
 
 //go:generate go tool enumer -type=DiagnosticSeverity -json
